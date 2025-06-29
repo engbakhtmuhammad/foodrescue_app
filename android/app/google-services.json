@@ -1,0 +1,243 @@
+{
+  "project_info": {
+    "project_number": "454768255710",
+    "firebase_url": "https://glamourme-default-rtdb.firebaseio.com",
+    "project_id": "glamourme",
+    "storage_bucket": "glamourme.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:454768255710:android:c82056d8535a850686184f",
+        "android_client_info": {
+          "package_name": "codoc.xenifylabs.com"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "454768255710-ag7uqa802fki20llfjggb5rr9o7agf2p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA67vt8KkpWt5NnVmj5B5_B61SvOl61InA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "454768255710-ag7uqa802fki20llfjggb5rr9o7agf2p.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "454768255710-kiqj9tv7q28437274tetigc4c0o4pkhk.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.foodrescueAdmin"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:454768255710:android:719dff5fd7da427e86184f",
+        "android_client_info": {
+          "package_name": "com.example.chat_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "454768255710-h5tnqrcl39uis0rvit5hde7gcem335da.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.chat_app",
+            "certificate_hash": "09d083a311afebcc017bc81a9f8890e34c7e0124"
+          }
+        },
+        {
+          "client_id": "454768255710-ag7uqa802fki20llfjggb5rr9o7agf2p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA67vt8KkpWt5NnVmj5B5_B61SvOl61InA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "454768255710-ag7uqa802fki20llfjggb5rr9o7agf2p.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "454768255710-kiqj9tv7q28437274tetigc4c0o4pkhk.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.foodrescueAdmin"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:454768255710:android:12bdac2343340ecc86184f",
+        "android_client_info": {
+          "package_name": "com.example.foodrescue"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "454768255710-ag7uqa802fki20llfjggb5rr9o7agf2p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA67vt8KkpWt5NnVmj5B5_B61SvOl61InA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "454768255710-ag7uqa802fki20llfjggb5rr9o7agf2p.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "454768255710-kiqj9tv7q28437274tetigc4c0o4pkhk.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.foodrescueAdmin"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:454768255710:android:48b163b2d5cc742c86184f",
+        "android_client_info": {
+          "package_name": "com.example.foodrescue_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "454768255710-ag7uqa802fki20llfjggb5rr9o7agf2p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA67vt8KkpWt5NnVmj5B5_B61SvOl61InA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "454768255710-ag7uqa802fki20llfjggb5rr9o7agf2p.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "454768255710-kiqj9tv7q28437274tetigc4c0o4pkhk.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.foodrescueAdmin"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:454768255710:android:960c46bc8d3d96ab86184f",
+        "android_client_info": {
+          "package_name": "com.example.glamourme"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "454768255710-su71scc910jmd52r618ru5prfgn8k9od.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.glamourme",
+            "certificate_hash": "09d083a311afebcc017bc81a9f8890e34c7e0124"
+          }
+        },
+        {
+          "client_id": "454768255710-ag7uqa802fki20llfjggb5rr9o7agf2p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA67vt8KkpWt5NnVmj5B5_B61SvOl61InA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "454768255710-ag7uqa802fki20llfjggb5rr9o7agf2p.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "454768255710-kiqj9tv7q28437274tetigc4c0o4pkhk.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.foodrescueAdmin"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:454768255710:android:70e318ba90a5a2e286184f",
+        "android_client_info": {
+          "package_name": "com.zozo.dineout"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "454768255710-ag7uqa802fki20llfjggb5rr9o7agf2p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA67vt8KkpWt5NnVmj5B5_B61SvOl61InA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "454768255710-ag7uqa802fki20llfjggb5rr9o7agf2p.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "454768255710-kiqj9tv7q28437274tetigc4c0o4pkhk.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.foodrescueAdmin"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

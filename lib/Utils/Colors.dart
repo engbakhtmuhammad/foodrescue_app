@@ -1,0 +1,31 @@
+// ignore_for_file: file_names, non_constant_identifier_names
+import 'package:flutter/material.dart';
+
+Color WhiteColor = const Color(0xffFFFFFF);
+Color BlackColor = const Color(0xff000000);
+Color orangeColor = const Color(0xffff781f);
+Color goldColor = const Color(0xffd4af37);
+Color GreyColor = const Color(0xFFEEEEEE);
+Color greycolor = const Color(0xff9e9e9e);
+Color RedColor = const Color(0xff5b000a);
+Color darkpurple = const Color(0xff473F97);
+Color transparent = Colors.transparent;
+Color greenColor = const Color(0xff00ff00);
+Color gradientColor = const Color(0xff00D261);
+Color boxcolor = const Color(0xff202427);
+Color yelloColor = const Color(0xffFFBB0D);
+Color orangeshadow = const Color(0xffff681f);
+Color lightgrey = const Color(0xffDDDDDD);
+Color Red = const Color(0xffFF4747);
+Color lightBlack = const Color(0XFF636777);
+Color darkmode = const Color(0xff111315);
+Color pinkshadow = const Color(0xffFFD4D4);
+Color pinkcolor = const Color(0xffFD3667);
+Color bgcolor = const Color(0xff464646);
+Color gredientgreen = const Color(0xff3EB489);
+Color green = const Color(0xff50c38c);
+Color purple = const Color(0xff4c00b0);
+Color cyan = const Color(0xff008B8B);
+Color greentext = const Color(0xff549227);
+Color lightblue = const Color(0xff89cff0);
+Color greytext = const Color(0xff97A2B0);
