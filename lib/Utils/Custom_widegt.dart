@@ -1,8 +1,6 @@
 // ignore_for_file: unused_import, file_names, non_constant_identifier_names, duplicate_ignore, prefer_const_literals_to_create_immutables, prefer_const_constructors
 // ignore_for_file: camel_case_types, use_key_in_widget_constructors, annotate_overrides, prefer_const_literals_to_create_immutables, file_names, unused_field, unused_element, avoid_unnecessary_containers, non_constant_identifier_names, unused_import, deprecated_member_use
 
-import 'dart:ffi';
-
 import 'package:foodrescue_app/Utils/Colors.dart';
 import 'package:dotted_line/dotted_line.dart';
 import 'package:flutter/material.dart';

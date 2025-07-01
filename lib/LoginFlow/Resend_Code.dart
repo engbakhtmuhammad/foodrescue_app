@@ -10,6 +10,8 @@ import 'package:foodrescue_app/Utils/Custom_widegt.dart';
 import 'package:foodrescue_app/utils/api_wrapper.dart';
 import 'package:foodrescue_app/api/Data_save.dart';
 import 'package:foodrescue_app/config/app_config.dart';
+import 'package:foodrescue_app/controllers/auth_controller.dart';
+import 'package:foodrescue_app/services/firebase_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -172,65 +174,28 @@ class _ResendCodeState extends State<ResendCode> {
 
   Mobilecheck(String mobile, String country) async {
     try {
-      Map map = {"mobile": mobile, "ccode": country};
-      print("@@@@@@@@@@@@@@@@@@@@@@@${map.toString()}");
-      // print("###########################${Country}");
-      Uri uri = Uri.parse(AppUrl.mobilecheck);
-      var response = await http.post(uri, body: jsonEncode(map));
-      if (response.statusCode == 200) {
-        var result = jsonDecode(response.body);
-        mobilecheck = result["Result"];
-        save("UserLogin", result["UserLogin"]);
-        // ignore: unnecessary_brace_in_string_interps
-        print("*********************${mobilecheck}");
+      // Use Firebase phone authentication instead of old API
+      String fullPhoneNumber = "$country$mobile";
+      print("Proceeding with Firebase phone authentication for: $fullPhoneNumber");
 
-        if (result["Result"] == "false") {
-          setState(() async {
-            otpCont.getMsgtype().then(
-              (msgtype) {
-                if (msgtype["otp_auth"] == "No") {
-                  Get.to(() => ForgotPassword(
-                        ccode: Country,
-                        mobileNo: Mobile.text,
-                      ));
-                } else {
-                  if (msgtype["SMS_TYPE"] == "Msg91") {
-                    otpCont.sendOtp(mobile: "$Country ${Mobile.text}").then(
-                      (value) {
-                        print("OTP CODE > > ${value["otp"]}");
-                        Get.to(() => VerifyAccount(
-                              ccode: Country,
-                              number: Mobile.text,
-                              Signup: "ResendCode",
-                              otpCode: value["otp"].toString(),
-                            ));
-                      },
-                    );
-                  } else if (msgtype["SMS_TYPE"] == "Twilio") {
-                    print("COUNBTRY ?? $Country${Mobile.text}");
-                    otpCont.twilloOtp(mobile: "$Country ${Mobile.text}").then(
-                      (value) {
-                        print("OTP CODE 1 > > ${value["otp"]}");
-                        Get.to(() => VerifyAccount(
-                              ccode: Country,
-                              number: Mobile.text,
-                              Signup: "ResendCode",
-                              otpCode: value["otp"].toString(),
-                            ));
-                      },
-                    );
-                  }
-                }
-              },
-            );
-          });
+      // Use AuthController for Firebase phone authentication
+      final AuthController authController = Get.put(AuthController());
+
+      authController.sendPhoneOTP(phoneNumber: fullPhoneNumber).then((result) {
+        if (result["Result"] == "true") {
+          Get.to(() => VerifyAccount(
+            ccode: country,
+            number: mobile,
+            Signup: "ResendCode",
+            otpCode: "", // Firebase handles OTP verification
+          ));
         } else {
-          ApiWrapper.showToastMessage(result["ResponseMsg"]);
+          FirebaseService.showToastMessage(result["ResponseMsg"]);
         }
-      }
-      // update();
+      });
     } catch (e) {
-      print(e.toString());
+      print("Error in mobile check: $e");
+      FirebaseService.showToastMessage("Failed to send OTP: ${e.toString()}");
     }
   }
 }

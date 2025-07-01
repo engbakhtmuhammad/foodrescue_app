@@ -34,16 +34,16 @@ class _NearbyhotelState extends State<Nearbyhotel> {
     nearbyrest.nearbyrest();
   }
 
-    late ColorNotifier notifier;
-    getDarkMode() async {
-      final prefs = await SharedPreferences.getInstance();
-      bool? previousState = prefs.getBool("setIsDark");
-      if (previousState == null) {
-        notifier.setIsDark = false;
-      } else {
-        notifier.setIsDark = previousState;
-      }
+  late ColorNotifier notifier;
+  getDarkMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    bool? previousState = prefs.getBool("setIsDark");
+    if (previousState == null) {
+      notifier.setIsDark = false;
+    } else {
+      notifier.setIsDark = previousState;
     }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +74,9 @@ class _NearbyhotelState extends State<Nearbyhotel> {
             title: Text(
               "Popular Restaurant around you".tr,
               style: TextStyle(
-                  fontFamily: "Gilroy Bold", fontSize: 16, color: notifier.textColor),
+                  fontFamily: "Gilroy Bold",
+                  fontSize: 16,
+                  color: notifier.textColor),
             )),
         body: SingleChildScrollView(
           child: Padding(
@@ -93,9 +95,17 @@ class _NearbyhotelState extends State<Nearbyhotel> {
                                   return InkWell(
                                     onTap: () {
                                       // selectedbox = true;
-                                      Get.to(() => HotelDetails(
-                                          detailId: nearbyrest
-                                              .cuisinerestlist[index]["id"]));
+                                      String? restaurantId = nearbyrest
+                                          .cuisinerestlist[index]["id"]
+                                          ?.toString();
+                                      if (restaurantId != null &&
+                                          restaurantId.isNotEmpty) {
+                                        Get.to(() => HotelDetails(
+                                            detailId: restaurantId));
+                                      } else {
+                                        Get.snackbar(
+                                            "Error", "Restaurant ID not found");
+                                      }
                                     },
                                     child: Container(
                                       margin: const EdgeInsets.symmetric(
@@ -126,10 +136,11 @@ class _NearbyhotelState extends State<Nearbyhotel> {
                                                   placeholderCacheWidth: 130,
                                                   placeholderFit: BoxFit.fill,
                                                   // placeholderScale: 1.0,
-                                                  image: AppUrl.imageurl +
-                                                      nearbyrest
-                                                              .cuisinerestlist[
-                                                          index]["img"],
+                                                  image: nearbyrest
+                                                          .cuisinerestlist[
+                                                              index]["img"]
+                                                          ?.toString() ??
+                                                      "https://picsum.photos/300/200",
                                                   fit: BoxFit.cover,
                                                 ),
                                               ]),
@@ -143,7 +154,9 @@ class _NearbyhotelState extends State<Nearbyhotel> {
                                               Text(
                                                 nearbyrest
                                                         .cuisinerestlist[index]
-                                                    ["title"],
+                                                            ["title"]
+                                                        ?.toString() ??
+                                                    "Restaurant",
                                                 style: TextStyle(
                                                     fontSize: 15,
                                                     fontFamily: "Gilroy Bold",
@@ -159,12 +172,15 @@ class _NearbyhotelState extends State<Nearbyhotel> {
                                                       width: Get.width * 0.015),
                                                   Text(
                                                     nearbyrest.cuisinerestlist[
-                                                        index]["rate"],
+                                                                index]["rating"]
+                                                            ?.toString() ??
+                                                        "0.0",
                                                     style: TextStyle(
                                                         fontSize: 15,
                                                         fontFamily:
                                                             "Gilroy Bold",
-                                                        color: notifier.textColor),
+                                                        color:
+                                                            notifier.textColor),
                                                   ),
                                                   SizedBox(
                                                       width: Get.width * 0.015),
@@ -176,7 +192,9 @@ class _NearbyhotelState extends State<Nearbyhotel> {
                                                 width: Get.width * 0.53,
                                                 child: Text(
                                                   nearbyrest.cuisinerestlist[
-                                                      index]["landmark"],
+                                                              index]["area"]
+                                                          ?.toString() ??
+                                                      "No address",
                                                   style: TextStyle(
                                                       fontSize: 14,
                                                       fontFamily:
@@ -190,7 +208,10 @@ class _NearbyhotelState extends State<Nearbyhotel> {
                                                 width: Get.width * 0.53,
                                                 child: Text(
                                                   nearbyrest.cuisinerestlist[
-                                                      index]["sdesc"],
+                                                              index]
+                                                              ["description"]
+                                                          ?.toString() ??
+                                                      "No description",
                                                   style: TextStyle(
                                                       fontSize: 14,
                                                       fontFamily:
@@ -237,7 +258,8 @@ class _NearbyhotelState extends State<Nearbyhotel> {
                                                               .center,
                                                       children: [
                                                         SizedBox(
-                                                          width: Get.width * 0.32,
+                                                          width:
+                                                              Get.width * 0.32,
                                                           child: GetBuilder<
                                                                   NearybyController>(
                                                               builder:
@@ -340,7 +362,8 @@ class _NearbyhotelState extends State<Nearbyhotel> {
                             padding: EdgeInsets.only(top: Get.height * 0.35),
                             child: Center(
                               child: Text(
-                                "We do not currently have any restaurants Popular.".tr,
+                                "We do not currently have any restaurants Popular."
+                                    .tr,
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                     color: greycolor,
@@ -352,7 +375,7 @@ class _NearbyhotelState extends State<Nearbyhotel> {
                     : Center(
                         child: Padding(
                         padding: EdgeInsets.only(top: Get.height * 0.4),
-                        child:  CircularProgressIndi(),
+                        child: CircularProgressIndi(),
                       ));
               })),
         ),

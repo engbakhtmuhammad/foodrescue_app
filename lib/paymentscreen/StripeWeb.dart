@@ -48,7 +48,7 @@ class _StripePaymentWebState extends State<StripePaymentWeb> {
             setState(() {});
           },
           onPageStarted: (String url) {
-            "${AppUrl.paymentBaseUrl}stripe/index.php?name=${payCard!.name}&email=${payCard!.email}&cardno=${payCard!.number}&cvc=${payCard!.cvv}&amt=${payCard!.amount}&mm=${payCard!.month}&yyyy=${payCard!.year}";
+            "https://placeholder.com/stripe-disabled";
 
           },
           onPageFinished: (String url) {
@@ -79,7 +79,7 @@ class _StripePaymentWebState extends State<StripePaymentWeb> {
         ),
       )
       ..loadRequest(Uri.parse(
-          "${AppUrl.paymentBaseUrl}stripe/index.php?name=${payCard!.name}&email=${payCard!.email}&cardno=${payCard!.number}&cvc=${payCard!.cvv}&amt=${payCard!.amount}&mm=${payCard!.month}&yyyy=${payCard!.year}"));
+          "https://placeholder.com/stripe-disabled"));
   }
 
   WebViewController webViewController = WebViewController();

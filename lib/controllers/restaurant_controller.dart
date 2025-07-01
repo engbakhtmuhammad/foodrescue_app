@@ -37,7 +37,7 @@ class RestaurantController extends GetxController {
   Future<void> getNearbyRestaurants({
     required double latitude,
     required double longitude,
-    double radiusKm = 10.0,
+    double radiusKm = 50000.0,
   }) async {
     try {
       isLoading.value = true;
@@ -174,7 +174,7 @@ class NearByController extends GetxController {
   Future<void> getNearbyRestaurants({
     required double latitude,
     required double longitude,
-    double radiusKm = 10.0,
+    double radiusKm = 50000.0,
   }) async {
     try {
       isLoading.value = true;

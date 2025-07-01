@@ -95,6 +95,8 @@ class FirebaseService {
       }
 
       var userData = userQuery.docs.first.data() as Map<String, dynamic>;
+      // Convert any Timestamp objects to strings to avoid JSON encoding issues
+      userData = _convertTimestampsToStrings(userData);
       String email = userData['email'];
 
       // Sign in with email and password
@@ -181,6 +183,8 @@ class FirebaseService {
       }
 
       var userData = userQuery.docs.first.data() as Map<String, dynamic>;
+      // Convert any Timestamp objects to strings to avoid JSON encoding issues
+      userData = _convertTimestampsToStrings(userData);
       String email = userData['email'];
 
       // Send password reset email
@@ -222,6 +226,8 @@ class FirebaseService {
       // Get updated user data
       DocumentSnapshot userDoc = await _firestore.collection('users').doc(uid).get();
       var userData = userDoc.data() as Map<String, dynamic>;
+      // Convert any Timestamp objects to strings to avoid JSON encoding issues
+      userData = _convertTimestampsToStrings(userData);
 
       return {
         'ResponseCode': '200',
@@ -494,5 +500,31 @@ class FirebaseService {
   // Sign out
   static Future<void> signOut() async {
     await _auth.signOut();
+  }
+
+  // Helper method to convert Timestamp objects to strings
+  static Map<String, dynamic> _convertTimestampsToStrings(Map<String, dynamic> data) {
+    Map<String, dynamic> converted = {};
+
+    data.forEach((key, value) {
+      if (value is Timestamp) {
+        converted[key] = value.toDate().toIso8601String();
+      } else if (value is Map<String, dynamic>) {
+        converted[key] = _convertTimestampsToStrings(value);
+      } else if (value is List) {
+        converted[key] = value.map((item) {
+          if (item is Map<String, dynamic>) {
+            return _convertTimestampsToStrings(item);
+          } else if (item is Timestamp) {
+            return item.toDate().toIso8601String();
+          }
+          return item;
+        }).toList();
+      } else {
+        converted[key] = value;
+      }
+    });
+
+    return converted;
   }
 }

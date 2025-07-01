@@ -46,6 +46,7 @@ class _SingupState extends State<Singup> {
   final AuthController authController = Get.put(AuthController());
   bool _obscureText = true;
   bool isPhoneRegistration = true; // Toggle between phone and email registration
+  bool isLoading = false; // Loading state for buttons
   void _toggle() {
     setState(() {
       _obscureText = !_obscureText;
@@ -107,9 +108,9 @@ class _SingupState extends State<Singup> {
           child: Column(
             children: [
               AppButton(
-                buttonColor: orangeColor,
-                buttontext: "Continue".tr,
-                onTap: () async {
+                buttonColor: isLoading ? Colors.grey : orangeColor,
+                buttontext: isLoading ? "Please wait...".tr : "Continue".tr,
+                onTap: isLoading ? null : () async {
                   if ((_formKey.currentState?.validate() ?? false)) {
                     Mobilecheck(Mobile.text, Country);
                   }
@@ -376,53 +377,56 @@ class _SingupState extends State<Singup> {
   }
 
   Mobilecheck(String mobile, String country) async {
+    if (isLoading) return; // Prevent multiple submissions
+
+    setState(() {
+      isLoading = true;
+    });
+
     try {
-      Map map = {"mobile": mobile, "ccode": country};
-      Uri uri = Uri.parse(AppUrl.mobilecheck);
-      var response = await http.post(uri,
-          body: jsonEncode(map));
-      if (response.statusCode == 200) {
-        var result = jsonDecode(response.body);
-        mobilecheck = result["Result"];
-        save("UserLogin", result["UserLogin"]);
-        // ignore: unnecessary_brace_in_string_interps
-        print("*********************${mobilecheck}");
+      // Skip the old API call and directly proceed with Firebase authentication
+      // This eliminates the "No host specified in URI" error
 
-        if (mobilecheck == "true") {
-          setState(() async {
-
-            if (isPhoneRegistration) {
-              // Phone registration with Firebase phone authentication
-              String fullPhoneNumber = "$Country${Mobile.text}";
-              authController.sendPhoneOTP(phoneNumber: fullPhoneNumber).then((result) {
-                if (result["Result"] == "true") {
-                  Get.to(() => VerifyAccount(
-                    ccode: Country,
-                    number: Mobile.text,
-                    Email: Email.text,
-                    FullName: FullName.text,
-                    Password: Password.text,
-                    Signup: "Signup",
-                    otpCode: "", // Firebase handles OTP verification
-                  ));
-                } else {
-                  FirebaseService.showToastMessage(result["ResponseMsg"]);
-                }
-              });
-            } else {
-              // Email registration - direct registration without phone verification
-              registerWithEmail();
-            }
+      if (isPhoneRegistration) {
+        // Phone registration with Firebase phone authentication
+        String fullPhoneNumber = "$country$mobile";
+        authController.sendPhoneOTP(phoneNumber: fullPhoneNumber).then((result) {
+          setState(() {
+            isLoading = false;
           });
 
-        } else {
-          FirebaseService.showToastMessage(result["ResponseMsg"]);
-        }
-
+          if (result["Result"] == "true") {
+            Get.to(() => VerifyAccount(
+              ccode: country,
+              number: mobile,
+              Email: Email.text,
+              FullName: FullName.text,
+              Password: Password.text,
+              Signup: "Signup",
+              otpCode: "", // Firebase handles OTP verification
+            ));
+          } else {
+            FirebaseService.showToastMessage(result["ResponseMsg"]);
+          }
+        }).catchError((error) {
+          setState(() {
+            isLoading = false;
+          });
+          FirebaseService.showToastMessage("Failed to send OTP: ${error.toString()}");
+        });
+      } else {
+        // Email registration - direct registration without phone verification
+        await registerWithEmail();
+        setState(() {
+          isLoading = false;
+        });
       }
-      // update();
     } catch (e) {
-      print(e.toString());
+      setState(() {
+        isLoading = false;
+      });
+      print("Error in mobile check: $e");
+      FirebaseService.showToastMessage("Registration failed: ${e.toString()}");
     }
   }
 }

@@ -30,8 +30,8 @@ class _PayTmPaymentState extends State<PayTmPayment> {
             setState(() {});
           },
           onPageStarted: (String url) {
-            "${AppUrl.paymentBaseUrl + "paytm/index.php?amt=${widget.totalAmount}&uid=${widget.uid}"}";
-            print("##################################$url");
+            "https://placeholder.com/paytm-disabled";
+            print("Payment disabled - Firebase only: $url");
 
           },
           onPageFinished: (String url) {
@@ -61,7 +61,7 @@ class _PayTmPaymentState extends State<PayTmPayment> {
         ),
       )
       ..loadRequest(Uri.parse(
-          "${AppUrl.paymentBaseUrl + "paytm/index.php?amt=${widget.totalAmount}&uid=${widget.uid}"}"));
+          "https://placeholder.com/paytm-disabled"));
   }
 
   WebViewController webViewController = WebViewController();

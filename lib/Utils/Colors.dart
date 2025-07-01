@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 Color WhiteColor = const Color(0xffFFFFFF);
 Color BlackColor = const Color(0xff000000);
-Color orangeColor = const Color(0xffff781f);
+Color orangeColor =  Colors.teal;
 Color goldColor = const Color(0xffd4af37);
 Color GreyColor = const Color(0xFFEEEEEE);
 Color greycolor = const Color(0xff9e9e9e);

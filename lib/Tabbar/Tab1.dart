@@ -141,7 +141,7 @@ class _Tab1State extends State<Tab1> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "${hdetail.hoteldetails["monthru"]}% Welcome Discount",
+                  "${hdetail.hoteldetails["mondayThursdayOffer"]}% Welcome Discount",
                   style: TextStyle(
                       fontFamily: 'Gilroy Bold',
                       fontSize: 16,
@@ -156,9 +156,9 @@ class _Tab1State extends State<Tab1> {
             SizedBox(height: Get.height * 0.01),
             GetBuilder<HoteldetailController>(builder: (context) {
               print(
-                  "###################################${hdetail.hoteldetails["open_time"]}");
-              String time = hdetail.hoteldetails["open_time"];
-              String closetime = hdetail.hoteldetails["close_time"];
+                  "###################################${hdetail.hoteldetails["openTime"]}");
+              String time = hdetail.hoteldetails["openTime"]?.toString() ?? "09:00";
+              String closetime = hdetail.hoteldetails["closeTime"]?.toString() ?? "22:00";
               List<String> durations = time.split(':');
               List<String> close = closetime.split(':');
               print('${durations[0]} hours ${durations[1]} minutes ');
@@ -169,9 +169,9 @@ class _Tab1State extends State<Tab1> {
               if (dateFormat == "Friday" ||
                   dateFormat == "Saturday" ||
                   dateFormat == "Sunday") {
-                currentdiscount = hdetail.hoteldetails["frisun"];
+                currentdiscount = hdetail.hoteldetails["fridaySundayOffer"]?.toString() ?? "No offer";
               } else {
-                currentdiscount = hdetail.hoteldetails["monthru"];
+                currentdiscount = hdetail.hoteldetails["mondayThursdayOffer"]?.toString() ?? "No offer";
               }
               return Column(
                 children: [
@@ -316,7 +316,7 @@ class _Tab1State extends State<Tab1> {
                             SizedBox(
                               width: Get.width * 0.80,
                               child: Text(
-                                "${hdetail.hoteldetails["monthru"]}% Welcome Discount",
+                                "${hdetail.hoteldetails["monmondayThursdayOfferthru"]}% Welcome Discount",
                                 style: TextStyle(
                                     fontFamily: 'Gilroy ExtraBold',
                                     fontSize: 20,
@@ -333,7 +333,7 @@ class _Tab1State extends State<Tab1> {
                             ),
                             SizedBox(height: Get.height * 0.025),
                             Html(
-                              data: hdetail.hoteldetails["mdesc"],
+                              data: hdetail.hoteldetails["description"],
                               style: {
                                 "body": Style(
                                     maxLines: 5,
@@ -380,9 +380,9 @@ class _Tab1State extends State<Tab1> {
     DateTime tsdate = DateTime.fromMillisecondsSinceEpoch(timestamp);
     String fdatetime = DateFormat('dd-MMM-yyy').format(tsdate);
     print(
-        "###################################${hdetail.hoteldetails["open_time"]}");
-    String time = hdetail.hoteldetails["open_time"];
-    String closetime = hdetail.hoteldetails["close_time"];
+        "###################################${hdetail.hoteldetails["openTime"]}");
+    String time = hdetail.hoteldetails["openTime"];
+    String closetime = hdetail.hoteldetails["closeTime"];
     List<String> durations = time.split(':');
     List<String> close = closetime.split(':');
 

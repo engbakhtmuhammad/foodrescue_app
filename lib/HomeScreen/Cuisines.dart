@@ -87,9 +87,12 @@ class _CuisinesState extends State<Cuisines> {
                                 return InkWell(
                                   onTap: () {
                                     // selectedbox = true;
-                                    Get.to(() => HotelDetails(
-                                        detailId: cuisines.cuisinewise[index]
-                                            ["id"]));
+                                    String? restaurantId = cuisines.cuisinewise[index]["id"]?.toString();
+                                    if (restaurantId != null && restaurantId.isNotEmpty) {
+                                      Get.to(() => HotelDetails(detailId: restaurantId));
+                                    } else {
+                                      Get.snackbar("Error", "Restaurant ID not found");
+                                    }
                                   },
                                   child: Container(
                                     margin:
@@ -119,9 +122,8 @@ class _CuisinesState extends State<Cuisines> {
                                                 placeholderCacheWidth: 130,
                                                 placeholderFit: BoxFit.fill,
                                                 // placeholderScale: 1.0,
-                                                image: AppUrl.imageurl +
-                                                    cuisines.cuisinewise[index]
-                                                        ["img"],
+                                                image:
+                                                    cuisines.cuisinewise[index]["img"]?.toString() ?? "https://picsum.photos/300/200",
                                                 fit: BoxFit.cover,
                                               ),
                                             ]),
@@ -133,8 +135,7 @@ class _CuisinesState extends State<Cuisines> {
                                               CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              cuisines.cuisinewise[index]
-                                                  ["title"],
+                                              cuisines.cuisinewise[index]["title"]?.toString() ?? "Restaurant",
                                               style: TextStyle(
                                                   fontSize: 15,
                                                   fontFamily: "Gilroy Bold",
@@ -148,8 +149,7 @@ class _CuisinesState extends State<Cuisines> {
                                                 SizedBox(
                                                     width: Get.width * 0.015),
                                                 Text(
-                                                  cuisines.cuisinewise[index]
-                                                      ["rate"],
+                                                  cuisines.cuisinewise[index]["rate"]?.toString() ?? "0.0",
                                                   style: TextStyle(
                                                       fontSize: 15,
                                                       fontFamily: "Gilroy Bold",
@@ -163,8 +163,7 @@ class _CuisinesState extends State<Cuisines> {
                                             SizedBox(
                                               width: Get.width * 0.53,
                                               child: Text(
-                                                cuisines.cuisinewise[index]
-                                                    ["landmark"],
+                                                cuisines.cuisinewise[index]["area"]?.toString() ?? "No address",
                                                 style: TextStyle(
                                                     fontSize: 14,
                                                     fontFamily: "Gilroy Medium",
@@ -175,8 +174,7 @@ class _CuisinesState extends State<Cuisines> {
                                             SizedBox(
                                               width: Get.width * 0.53,
                                               child: Text(
-                                                cuisines.cuisinewise[index]
-                                                    ["sdesc"],
+                                                cuisines.cuisinewise[index]["description"]?.toString() ?? "No description",
                                                 style: TextStyle(
                                                     fontSize: 14,
                                                     fontFamily: "Gilroy Medium",
@@ -240,14 +238,10 @@ class _CuisinesState extends State<Cuisines> {
                                                               dateFormat ==
                                                                   "Sunday") {
                                                             currentdiscount =
-                                                                cuisines.cuisinewise[
-                                                                        index]
-                                                                    ["frisun"];
+                                                                cuisines.cuisinewise[index]["frisun"]?.toString() ?? "0";
                                                           } else {
                                                             currentdiscount =
-                                                                cuisines.cuisinewise[
-                                                                        index]
-                                                                    ["monthru"];
+                                                                cuisines.cuisinewise[index]["monthru"]?.toString() ?? "0";
                                                           }
                                                           return Text(
                                                             "EXTRA $currentdiscount% OFF",

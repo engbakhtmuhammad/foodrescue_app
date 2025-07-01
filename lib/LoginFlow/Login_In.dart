@@ -52,6 +52,7 @@ class _LoginPageState extends State<LoginPage> {
 
   String loginpage = "";
   bool isChecked = false;
+  bool isLoading = false; // Loading state for login button
 
   final _formKey = GlobalKey<FormState>();
   final formKey = GlobalKey<FormState>();
@@ -83,9 +84,9 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               children: [
                 AppButton(
-                  buttonColor: orangeColor,
-                  buttontext: "Sign In".tr,
-                  onTap: () {
+                  buttonColor: isLoading ? Colors.grey : orangeColor,
+                  buttontext: isLoading ? "Signing in...".tr : "Sign In".tr,
+                  onTap: isLoading ? null : () {
                     if ((_formKey.currentState?.validate() ?? false)) {
                       initPlatformState();
                       if (isPhoneLogin) {
@@ -380,6 +381,12 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   login(String mobile, String country, String password) async {
+    if (isLoading) return; // Prevent multiple submissions
+
+    setState(() {
+      isLoading = true;
+    });
+
     try {
       var result = await authController.loginUser(
         mobile: mobile,
@@ -401,10 +408,20 @@ class _LoginPageState extends State<LoginPage> {
     } catch (e) {
       print(e.toString());
       FirebaseService.showToastMessage("Login failed: ${e.toString()}");
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
   loginWithEmail(String email, String password) async {
+    if (isLoading) return; // Prevent multiple submissions
+
+    setState(() {
+      isLoading = true;
+    });
+
     try {
       var result = await authController.loginWithEmail(
         email: email,
@@ -424,6 +441,10 @@ class _LoginPageState extends State<LoginPage> {
     } catch (e) {
       print(e.toString());
       FirebaseService.showToastMessage("Email login failed: ${e.toString()}");
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 

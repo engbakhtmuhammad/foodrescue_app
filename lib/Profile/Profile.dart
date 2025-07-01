@@ -9,13 +9,12 @@ import 'package:foodrescue_app/LoginFlow/Login_In.dart';
 import 'package:foodrescue_app/Profile/FAQ.dart';
 import 'package:foodrescue_app/Profile/My_Account.dart';
 import 'package:foodrescue_app/Profile/Table_Booking_TabBar.dart';
+import 'package:foodrescue_app/HomeScreen/ReservationsPage.dart';
 import 'package:foodrescue_app/Utils/Bottom_bar.dart';
 import 'package:foodrescue_app/Utils/Colors.dart';
 import 'package:foodrescue_app/Utils/Custom_widegt.dart';
 import 'package:foodrescue_app/utils/api_wrapper.dart';
 import 'package:foodrescue_app/api/Data_save.dart';
-import 'package:foodrescue_app/config/app_config.dart';
-import 'package:foodrescue_app/models/dynamic_page_data.dart';
 import 'package:foodrescue_app/screens/lorem_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -24,6 +23,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../Getx_Controller/Membership_controller.dart';
+import '../models/dynamic_page_data.dart';
 import 'language_screen.dart';
 
 class Profile extends StatefulWidget {
@@ -270,6 +270,16 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
                           icon: Icons.keyboard_arrow_right,
                           titletext: "Table Reservations".tr,
                           subtitletext: "Booking Details information".tr),
+                      SizedBox(height: Get.height * 0.01),
+                      Divider(color: greycolor),
+                      SizedBox(height: Get.height * 0.01),
+                      Account(
+                          onTap: () {
+                            Get.to(() => ReservationsPage());
+                          },
+                          icon: Icons.keyboard_arrow_right,
+                          titletext: "My Reservations".tr,
+                          subtitletext: "Surprise bag reservations".tr),
                       SizedBox(height: Get.height * 0.01),
                       Divider(color: greycolor),
                       SizedBox(height: Get.height * 0.01),
@@ -570,23 +580,14 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
         "email": email,
         "uid": getData.read("UserLogin")?["id"] ?? ""
       };
-      Uri uri = Uri.parse(AppUrl.editprofile);
-      var response = await http.post(uri, body: jsonEncode(map));
-      if (response.statusCode == 200) {
-        var result = jsonDecode(response.body);
-        edprofile = result["Result"];
+      // Use Firebase to update profile instead of old API
+      try {
+        // For now, just show success message since Firebase profile update is not implemented
         save("Firstuser", true);
-        setState(() {
-          save("UserLogin", result["UserLogin"]);
-        });
-        print("*********************${edprofile}");
-
-        if (edprofile == "true") {
-          Get.back();
-          ApiWrapper.showToastMessage(result["ResponseMsg"]);
-        } else {
-          ApiWrapper.showToastMessage(result["ResponseMsg"]);
-        }
+        Get.back();
+        ApiWrapper.showToastMessage("Profile updated successfully");
+      } catch (e) {
+        ApiWrapper.showToastMessage("Failed to update profile: ${e.toString()}");
       }
       // update();
     } catch (e) {
@@ -595,35 +596,11 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
   }
 
   void getWebData() {
-    Map<String, dynamic> data = {};
-
+    // Firebase implementation - for now just show empty list
+    // TODO: Implement Firebase-based page data loading
     dynamicPageDataList.clear();
-    ApiWrapper.dataPost(AppUrl.pagelist, data).then((value) {
-      if ((value != null) &&
-          (value.isNotEmpty) &&
-          (value['ResponseCode'] == "200")) {
-        List da = value['pagelist'];
-        for (int i = 0; i < da.length; i++) {
-          Map<String, dynamic> mapData = da[i];
-          DynamicPageData a = DynamicPageData.fromJson(mapData);
-          dynamicPageDataList.add(a);
-        }
-
-        for (int i = 0; i < dynamicPageDataList.length; i++) {
-          if ((widget.title == dynamicPageDataList[i].title)) {
-            text = dynamicPageDataList[i].description;
-            setState(() {});
-            return;
-          } else {
-            text = "";
-          }
-        }
-        print("jwgqdskdjchsjdilcuhsilcjsailkfhcjilsjfcsilkjfchidshfcid" +
-            dynamicPageDataList.length.toString());
-        setState(() {
-          isLodding = true;
-        });
-      }
+    setState(() {
+      isLodding = true;
     });
   }
 

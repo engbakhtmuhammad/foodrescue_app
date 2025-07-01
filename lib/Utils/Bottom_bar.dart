@@ -2,8 +2,9 @@
 // ignore_for_file: unused_field, library_private_types_in_public_api, camel_case_types, prefer_const_constructors, file_names, prefer_const_constructors_in_immutables
 // ignore_for_file: use_key_in_widget_constructors, annotate_overrides, prefer_const_literals_to_create_immutables,  unused_element, avoid_unnecessary_containers, non_constant_identifier_names, unused_import, deprecated_member_use
 
-import 'package:foodrescue_app/HomeScreen/HomePage.dart';
+import 'package:foodrescue_app/HomeScreen/NewHomePage.dart';
 import 'package:foodrescue_app/HomeScreen/Nearby_hotel.dart';
+import 'package:foodrescue_app/HomeScreen/SearchPage.dart';
 import 'package:foodrescue_app/HomeScreen/Notification.dart';
 import 'package:foodrescue_app/Profile/Profile.dart';
 import 'package:foodrescue_app/Utils/Colors.dart';
@@ -30,7 +31,8 @@ class _BottomBarState extends State<BottomBar> {
   static const exitTimeInMillis = 2000;
 
   final _pageOption = [
-    HomePage(),
+    NewHomePage(),
+    SearchPage(),
     Nearbyhotel(),
     Notificationpage(),
     Profile(),
@@ -82,22 +84,29 @@ class _BottomBarState extends State<BottomBar> {
                   height: MediaQuery.of(context).size.height / 35),
               label: 'Home'.tr),
           BottomNavigationBarItem(
-              icon: Image.asset("assets/nearby.png",
+              icon: Icon(Icons.search,
                   color: selectedIndex == 1
+                      ? orangeColor
+                      : greycolor.withOpacity(0.5),
+                  size: MediaQuery.of(context).size.height / 35),
+              label: 'Search'.tr),
+          BottomNavigationBarItem(
+              icon: Image.asset("assets/nearby.png",
+                  color: selectedIndex == 2
                       ? orangeColor
                       : greycolor.withOpacity(0.5),
                   height: MediaQuery.of(context).size.height / 35),
               label: 'Popular'.tr),
           BottomNavigationBarItem(
               icon: Image.asset("assets/onesignal.png",
-                  color: selectedIndex == 2
+                  color: selectedIndex == 3
                       ? orangeColor
                       : greycolor.withOpacity(0.5),
                   height: MediaQuery.of(context).size.height / 35),
               label: 'Notification'.tr),
           BottomNavigationBarItem(
             icon: Image.asset("assets/profile.png",
-                color: selectedIndex == 3
+                color: selectedIndex == 4
                     ? orangeColor
                     : greycolor.withOpacity(0.5),
                 height: MediaQuery.of(context).size.height / 35),

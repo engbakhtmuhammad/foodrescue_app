@@ -1,7 +1,7 @@
 // ignore_for_file: prefer_const_literals_to_create_immutables, prefer_const_constructors, non_constant_identifier_names, file_names, sized_box_for_whitespace, avoid_print, must_be_immutable, unnecessary_brace_in_string_interps, unused_local_variable, unrelated_type_equality_checks
 // ignore_for_file: camel_case_types, use_key_in_widget_constructors, annotate_overrides,  unused_field, unused_element, avoid_unnecessary_containers, unused_import, deprecated_member_use
 
-import 'package:foodrescue_app/Getx_Controller/Controller.dart';
+
 import 'package:foodrescue_app/Getx_Controller/Hotel_details_Controller.dart';
 import 'package:foodrescue_app/Payment/Payment_Discount.dart';
 import 'package:foodrescue_app/Payment/Payment_Successfull.dart';
@@ -9,6 +9,7 @@ import 'package:foodrescue_app/Utils/Colors.dart';
 import 'package:foodrescue_app/Utils/Custom_widegt.dart';
 import 'package:foodrescue_app/Utils/String.dart';
 import 'package:foodrescue_app/Utils/image.dart';
+import 'package:foodrescue_app/controllers/home_controller.dart';
 import 'package:foodrescue_app/utils/api_wrapper.dart';
 import 'package:foodrescue_app/api/Data_save.dart';
 import 'package:flutter/material.dart';
@@ -150,7 +151,7 @@ class _Tab2State extends State<Tab2> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "${hdetail.hoteldetails["frisun"]}% Welcome Discount",
+                  "${hdetail.hoteldetails["fridaySundayOffer"]}% Welcome Discount",
                   style: TextStyle(
                       fontFamily: 'Gilroy Bold',
                       fontSize: 16,
@@ -165,9 +166,9 @@ class _Tab2State extends State<Tab2> {
             SizedBox(height: Get.height * 0.01),
             GetBuilder<HoteldetailController>(builder: (context) {
               print(
-                  "###################################${hdetail.hoteldetails["open_time"]}");
-              String time = hdetail.hoteldetails["open_time"];
-              String closetime = hdetail.hoteldetails["close_time"];
+                  "###################################${hdetail.hoteldetails["openTime"]}");
+              String time = hdetail.hoteldetails["openTime"];
+              String closetime = hdetail.hoteldetails["closeTime"];
               List<String> durations = time.split(':');
               List<String> close = closetime.split(':');
               print('${durations[0]} hours ${durations[1]} minutes ');
@@ -178,9 +179,9 @@ class _Tab2State extends State<Tab2> {
               if (dateFormat == "Friday" ||
                   dateFormat == "Saturday" ||
                   dateFormat == "Sunday") {
-                currentdiscount = hdetail.hoteldetails["frisun"];
+                currentdiscount = hdetail.hoteldetails["fridaySundayOffer"];
               } else {
-                currentdiscount = hdetail.hoteldetails["monthru"];
+                currentdiscount = hdetail.hoteldetails["mondayThursdayOffer"];
               }
               return Column(
                 children: [
@@ -242,7 +243,7 @@ class _Tab2State extends State<Tab2> {
                   }),
                   SizedBox(height: Get.height * 0.02),
                   GetBuilder<HoteldetailController>(builder: (context) {
-                    return hdetail.hoteldetails["show_table"] != "0"
+                    return hdetail.hoteldetails["tShow"] != "0"
                         ? InkWell(
                             onTap: () {
                               getTime(int.parse(durations[0]),
@@ -325,7 +326,7 @@ class _Tab2State extends State<Tab2> {
                             SizedBox(
                               width: Get.width * 0.80,
                               child: Text(
-                                "${hdetail.hoteldetails["frisun"]}% Welcome Discount",
+                                "${hdetail.hoteldetails["fridaySundayOffer"]}% Welcome Discount",
                                 style: TextStyle(
                                     fontFamily: 'Gilroy ExtraBold',
                                     fontSize: 20,
@@ -342,7 +343,7 @@ class _Tab2State extends State<Tab2> {
                             ),
                             SizedBox(height: Get.height * 0.025),
                             Html(
-                              data: hdetail.hoteldetails["mdesc"],
+                              data: hdetail.hoteldetails["shortDescription"],
                               style: {
                                 "body": Style(
                                     maxLines: 5,
@@ -387,9 +388,9 @@ class _Tab2State extends State<Tab2> {
     DateTime tsdate = DateTime.fromMillisecondsSinceEpoch(timestamp);
     String fdatetime = DateFormat('dd-MMM-yyy').format(tsdate);
     print(
-        "###################################${hdetail.hoteldetails["open_time"]}");
-    String time = hdetail.hoteldetails["open_time"];
-    String closetime = hdetail.hoteldetails["close_time"];
+        "###################################${hdetail.hoteldetails["openTime"]}");
+    String time = hdetail.hoteldetails["openTime"];
+    String closetime = hdetail.hoteldetails["closeTime"];
     List<String> durations = time.split(':');
     List<String> close = closetime.split(':');
 

@@ -359,7 +359,7 @@ class _HomePageState extends State<HomePage> {
                                     placeholderCacheWidth: 240,
                                     placeholderFit: BoxFit.fill,
                                     // placeholderScale: 1.0,
-                                    image: AppUrl.imageurl + hData.sliderimage[index]["img"],
+                                    image: hData.sliderimage[index]["image"] ?? "https://picsum.photos/400/200",
                                     fit: BoxFit.cover,
                                   ),
                                 ),
@@ -684,11 +684,7 @@ class _HomePageState extends State<HomePage> {
                                                               placeholderFit:
                                                               BoxFit.fill,
                                                               // placeholderScale: 1.0,
-                                                              image: AppUrl
-                                                                  .imageurl +
-                                                                  hData.latestrest[
-                                                                  index]
-                                                                  ["img"],
+                                                              image: hData.latestrest[index]["image"] ?? "https://picsum.photos/300/200",
                                                               fit: BoxFit.cover,
                                                             ),
                                                             Positioned(
@@ -831,7 +827,7 @@ class _HomePageState extends State<HomePage> {
                                                         width: Get.width * 0.45,
                                                         child: Text(
                                                             hData.latestrest[
-                                                            index]["sdesc"],
+                                                            index]["shortDescription"],
                                                             style: TextStyle(
                                                                 color: greycolor,
                                                                 fontFamily:
@@ -883,11 +879,7 @@ class _HomePageState extends State<HomePage> {
                                                     children: [
                                                       CircleAvatar(
                                                           backgroundImage:
-                                                          NetworkImage(AppUrl
-                                                              .imageurl +
-                                                              hData.CuisineList[
-                                                              index]
-                                                              ["img"]),
+                                                          NetworkImage(hData.CuisineList[index]["image"] ?? "https://via.placeholder.com/100x100"),
                                                           radius: 35,
                                                           backgroundColor:
                                                           transparent),
@@ -975,7 +967,7 @@ class _HomePageState extends State<HomePage> {
                                                             placeholderFit:
                                                             BoxFit.fill,
                                                             // placeholderScale: 1.0,
-                                                            image: AppUrl.imageurl + hData.allrest[index]["img"],
+                                                            image: hData.allrest[index]["image"] ?? "https://picsum.photos/300/200",
                                                             fit: BoxFit.cover,
                                                           ),
                                                         ),
@@ -1162,7 +1154,7 @@ class _HomePageState extends State<HomePage> {
                                                                   hData.allrest[
                                                                   index]
                                                                   [
-                                                                  "sdesc"],
+                                                                  "shortDescription"],
                                                                   style: TextStyle(
                                                                       color:
                                                                       greycolor,
@@ -1455,8 +1447,7 @@ class _HomePageState extends State<HomePage> {
                                 ["title"],
                                 titleColor: notifier.textColor,
                                 val: 0,
-                                image: AppUrl.imageurl +
-                                    payment.paymentGetway[i]["img"],
+                                image: payment.paymentGetway[i]["image"] ?? "https://via.placeholder.com/100x100",
                                 adress: payment.paymentGetway[i]
                                 ["subtitle"],
                                 ontap: () async {

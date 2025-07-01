@@ -3,7 +3,7 @@ import '../services/payment_service.dart';
 import '../services/firebase_service.dart';
 import '../api/Data_save.dart';
 
-class PaymentGatewayController extends GetxController {
+class PaymentController extends GetxController {
   var paymentGateways = <Map<String, dynamic>>[].obs;
   var isLoading = false.obs;
 
@@ -26,6 +26,57 @@ class PaymentGatewayController extends GetxController {
       FirebaseService.showToastMessage("Error loading payment gateways");
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  // Get wallet report
+  Future<Map<String, dynamic>> getWalletReport() async {
+    try {
+      var userData = getData.read("UserLogin");
+      if (userData == null) {
+        return {
+          'Result': 'false',
+          'ResponseMsg': 'Please login first',
+        };
+      }
+
+      String uid = userData["id"];
+      return await PaymentService.getWalletReport(uid: uid);
+    } catch (e) {
+      return {
+        'Result': 'false',
+        'ResponseMsg': e.toString(),
+      };
+    }
+  }
+
+  // Update wallet
+  Future<Map<String, dynamic>> updateWallet({
+    required double amount,
+    required String type,
+    required String description,
+  }) async {
+    try {
+      var userData = getData.read("UserLogin");
+      if (userData == null) {
+        return {
+          'Result': 'false',
+          'ResponseMsg': 'Please login first',
+        };
+      }
+
+      String uid = userData["id"];
+      return await PaymentService.updateWallet(
+        uid: uid,
+        amount: amount,
+        type: type,
+        description: description,
+      );
+    } catch (e) {
+      return {
+        'Result': 'false',
+        'ResponseMsg': e.toString(),
+      };
     }
   }
 }

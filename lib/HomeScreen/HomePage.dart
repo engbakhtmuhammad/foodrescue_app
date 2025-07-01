@@ -12,12 +12,14 @@ import 'package:foodrescue_app/Getx_Controller/Hotel_details_Controller.dart';
 import 'package:foodrescue_app/Getx_Controller/Membership_controller.dart';
 import 'package:foodrescue_app/Getx_Controller/Near_By_controller.dart';
 import 'package:foodrescue_app/Getx_Controller/PaymentGetwey_controller.dart';
-import 'package:foodrescue_app/Getx_Controller/Plan_purchase_Controller.dart';
+// Plan functionality removed as requested
 import 'package:foodrescue_app/HomeScreen/Cuisines.dart';
 import 'package:foodrescue_app/HomeScreen/Hotel_Details.dart';
 import 'package:foodrescue_app/HomeScreen/Nearby_hotel.dart';
 import 'package:foodrescue_app/HomeScreen/Notification.dart';
 import 'package:foodrescue_app/HomeScreen/View_details.dart';
+import 'package:foodrescue_app/HomeScreen/SurpriseBagDetails.dart';
+import 'package:foodrescue_app/HomeScreen/LocationRadiusPage.dart';
 import 'package:foodrescue_app/IntroScreen/IntroScreen.dart';
 import 'package:foodrescue_app/LoginFlow/Login_In.dart';
 import 'package:foodrescue_app/Profile/Profile.dart';
@@ -78,8 +80,9 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     setState(() {
-      lat == null ? getUserLocation() : getUserLocation1();
       payment.paymentgateway();
+      // Controller will load ALL restaurants automatically without location requirements
+      print("HomePage initState completed - controller will load ALL restaurants");
     });
     // plugin.initialize(publicKey: AppUrl.publicKeyTest);
     _razorpay = Razorpay();
@@ -89,9 +92,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _handlePaymentSuccess(PaymentSuccessResponse response) {
-    // bookNowOrder(response.paymentId);
-    planpurchase.planpurchase(
-        planid: planid, pname: paymenttital, transactionid: response.paymentId);
+    // Plan functionality removed as requested
+    print("Payment success but plan functionality disabled: ${response.paymentId}");
   }
 
   void _handlePaymentError(PaymentFailureResponse response) {
@@ -121,11 +123,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   String? SelectedIndex;
-  String? plan1;
-  String? plan2;
   int currentindex = 0;
   bool selected = true;
-  bool defultplan = false;
+  // Plan-related variables removed as requested
 
   var first;
   var address;
@@ -133,8 +133,12 @@ class _HomePageState extends State<HomePage> {
   String razorpaykey = "";
   String? paymenttital;
   int? _groupValue;
-  String? planid;
+  // Plan-related variables (disabled but kept for compatibility)
+  String? planid = "";
   String planprice = "0";
+  String? plan1 = "";
+  String? plan2 = "";
+  bool defultplan = false;
   final _paymentCard = PaymentCardCreated();
   var currency;
   var _autoValidateMode = AutovalidateMode.disabled;
@@ -148,7 +152,8 @@ class _HomePageState extends State<HomePage> {
   PaystackController paystackCont = Get.put(PaystackController());
   HomeController hData = Get.find<HomeController>();
 
-  PlanpurchaseController planpurchase = Get.put(PlanpurchaseController());
+  // Plan functionality disabled - dummy object for compatibility
+  var planpurchase = _DummyPlanPurchase();
   PaymentgatewayController payment = Get.put(PaymentgatewayController());
 
   // MembershipController membership = Get.put(MembershipController());
@@ -157,45 +162,77 @@ class _HomePageState extends State<HomePage> {
   String totelbill = "0";
 
   Future getUserLocation() async {
+    print("getUserLocation() called");
     setState(() {});
     LocationPermission permission;
     permission = await Geolocator.checkPermission();
+    print("Location permission check: $permission");
     permission = await Geolocator.requestPermission();
-    if (permission == LocationPermission.denied) {}
-    var currentLocation = await locateUser();
-    debugPrint('location: ${currentLocation.latitude}');
-    lat = currentLocation.latitude;
-    long = currentLocation.longitude;
+    print("Location permission request: $permission");
+    if (permission == LocationPermission.denied) {
+      print("Location permission denied!");
+    }
+    try {
+      var currentLocation = await locateUser();
+      debugPrint('location: ${currentLocation.latitude}');
+      lat = currentLocation.latitude;
+      long = currentLocation.longitude;
+      print("Location retrieved successfully: $lat, $long");
 
-    List<Placemark> addresses = await placemarkFromCoordinates(
-        currentLocation.latitude, currentLocation.longitude);
-    await placemarkFromCoordinates(
-        currentLocation.latitude, currentLocation.longitude)
-        .then((List<Placemark> placemarks) {
-      Placemark place = placemarks[0];
-      setState(() {
-        address = '${place.street}, ${place.subLocality}, ${place.subAdministrativeArea}, ${place.postalCode}';
+      List<Placemark> addresses = await placemarkFromCoordinates(
+          currentLocation.latitude, currentLocation.longitude);
+      print("Addresses retrieved: ${addresses.length}");
+
+      await placemarkFromCoordinates(
+          currentLocation.latitude, currentLocation.longitude)
+          .then((List<Placemark> placemarks) {
+        Placemark place = placemarks[0];
+        setState(() {
+          address = '${place.street}, ${place.subLocality}, ${place.subAdministrativeArea}, ${place.postalCode}';
+        });
+        print("Address set: $address");
+      }).catchError((e) {
+        debugPrint("Error in address resolution: $e");
       });
-    }).catchError((e) {
-      debugPrint(e);
-    });
-    first = addresses.first.name;
-    print("FIRST ${address}");
-    // address ='${address.street}, ${address.subLocality}, ${address.subAdministrativeArea}, ${address.postalCode}';
 
-    hData.homeDataApi();
-    hData.selectplan();
-    setState(() {});
+      first = addresses.first.name;
+      print("FIRST ${address}");
+      // address ='${address.street}, ${address.subLocality}, ${address.subAdministrativeArea}, ${address.postalCode}';
+
+      // Controller handles data loading automatically
+      setState(() {});
+      print("getUserLocation() completed");
+    } catch (e) {
+      print("Error in getUserLocation(): $e");
+      // Controller handles data loading automatically
+    }
   }
 
   Future getUserLocation1() async {
+    print("getUserLocation1() called");
     setState(() {});
     LocationPermission permission;
     permission = await Geolocator.checkPermission();
+    print("Location permission check: $permission");
     permission = await Geolocator.requestPermission();
-    if (permission == LocationPermission.denied) {}
-    var currentLocation = await locateUser();
-    debugPrint('location: ${currentLocation.latitude}');
+    print("Location permission request: $permission");
+    if (permission == LocationPermission.denied) {
+      print("Location permission denied!");
+    }
+    try {
+      var currentLocation = await locateUser();
+      debugPrint('location: ${currentLocation.latitude}');
+      lat = currentLocation.latitude;
+      long = currentLocation.longitude;
+      print("Location retrieved successfully: $lat, $long");
+
+      // Controller handles data loading automatically
+      setState(() {});
+      print("getUserLocation1() completed");
+    } catch (e) {
+      print("Error in getUserLocation1(): $e");
+      // Controller handles data loading automatically
+    }
   }
 
   Future<Position> locateUser() async {
@@ -216,68 +253,113 @@ class _HomePageState extends State<HomePage> {
         exit(0);
       },
       child: Scaffold(
-        bottomNavigationBar: GetBuilder<HomeController>(builder: (context) {
-          return hData.homeDataList["is_subscribe"] == 0
-              ? bottombar(
-              Hedingtext: "special prices only for you".tr.toUpperCase(),
-              bgcolor: transparent,
-              buttontext1: "select a plan".tr.toUpperCase(),
-              onTap: bottomsheet)
-              : SizedBox();
-        })      ,
+        // Plan section removed as requested
+        // bottomNavigationBar: GetBuilder<HomeController>(builder: (context) {
+        //   return hData.homeDataList["is_subscribe"] == 0
+        //       ? bottombar(
+        //       Hedingtext: "special prices only for you".tr.toUpperCase(),
+        //       bgcolor: transparent,
+        //       buttontext1: "select a plan".tr.toUpperCase(),
+        //       onTap: bottomsheet)
+        //       : SizedBox();
+        // }),
         backgroundColor: notifier.background,
         appBar: AppBar(
-            leadingWidth: 35,
             elevation: 0,
             backgroundColor: notifier.background,
-            centerTitle: true,
-            actions: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: InkWell(
-                    onTap: () {
-                      Get.to(() => Notificationpage());
-                    },
-                    child: Image.asset("assets/onesignal.png",
-                        height: 20, color: orangeColor)),
-              )
-            ],
-            leading: InkWell(
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 14),
-                  child: Image.asset(
-                    "assets/livelocation.png",
-                    height: 15,
-                    // color: WhiteColor,
-                  ),
-                )),
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            toolbarHeight: 80,
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                InkWell(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                Text(
+                  "Good evening!",
+                  style: TextStyle(
+                    color: notifier.textColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                SizedBox(height: 4),
+                GestureDetector(
+                  onTap: () {
+                    Get.to(() => LocationRadiusPage());
+                  },
+                  child: Row(
                     children: [
-                      SizedBox(
-                        width: Get.width * 0.64,
+                      Obx(() => hData.isGettingLocation.value
+                        ? SizedBox(
+                            width: 12,
+                            height: 12,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(orangeColor),
+                            ),
+                          )
+                        : Icon(
+                            Icons.location_on,
+                            size: 16,
+                            color: orangeColor,
+                          ),
+                      ),
+                      SizedBox(width: 4),
+                      Expanded(
                         child: Text(
-                          "${address ?? ""}",
+                          hData.currentAddress.value.isNotEmpty
+                            ? hData.currentAddress.value
+                            : "Getting location...",
                           style: TextStyle(
-                              fontFamily: "Gilroy Bold",
-                              color: notifier.textColor,
-                              fontSize: 16),
+                            color: notifier.textColor.withOpacity(0.7),
+                            fontSize: 14,
+                          ),
+                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      Icon(
+                        Icons.keyboard_arrow_down,
+                        size: 16,
+                        color: notifier.textColor.withOpacity(0.7),
+                      ),
                     ],
                   ),
-                )
+                ),
               ],
-            )),
+            ),
+            actions: [
+              IconButton(
+                onPressed: () {
+                  Get.to(() => Notificationpage());
+                },
+                icon: Stack(
+                  children: [
+                    Icon(
+                      Icons.notifications_outlined,
+                      color: notifier.textColor,
+                      size: 24,
+                    ),
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: orangeColor,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 8),
+            ],
+            ),
         body: RefreshIndicator(
           onRefresh: () {
             return Future.delayed(
               Duration(seconds: 2), () {
+                // Refresh ALL restaurants data
                 hData.homeDataApi();
               },
             );
@@ -287,7 +369,23 @@ class _HomePageState extends State<HomePage> {
                 return Padding(
                     padding: EdgeInsets.symmetric(horizontal: 12),
                     child: hData.isLoading.value == true
-                        ? Column(
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                CircularProgressIndicator(color: orangeColor),
+                                SizedBox(height: 16),
+                                Text(
+                                  "Loading restaurants...".tr,
+                                  style: TextStyle(
+                                    color: notifier.textColor,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         SizedBox(height: Get.height * 0.02),
@@ -328,7 +426,7 @@ class _HomePageState extends State<HomePage> {
                                     placeholderCacheWidth: 240,
                                     placeholderFit: BoxFit.fill,
                                     // placeholderScale: 1.0,
-                                    image: AppUrl.imageurl + hData.sliderimage[index]["img"],
+                                    image: hData.sliderimage[index]["image"] ?? "https://picsum.photos/400/200",
 
                                     // "${AppUrl.imageurl} + ${home_controller.homeDatakmodal?.homeData.bannerlist}",
                                     fit: BoxFit.cover,
@@ -608,10 +706,12 @@ class _HomePageState extends State<HomePage> {
                                                   setState(() {
                                                     currentindex = index;
                                                   });
-                                                  Get.to(() => HotelDetails(
-                                                      detailId:
-                                                      hData.latestrest[index]
-                                                      ["id"]));
+                                                  String? restaurantId = hData.latestrest[index]["id"]?.toString();
+                                                  if (restaurantId != null && restaurantId.isNotEmpty) {
+                                                    Get.to(() => HotelDetails(detailId: restaurantId));
+                                                  } else {
+                                                    Get.snackbar("Error", "Restaurant ID not found");
+                                                  }
                                                 },
                                                 child: Container(
                                                   decoration: BoxDecoration(
@@ -654,11 +754,7 @@ class _HomePageState extends State<HomePage> {
                                                               placeholderFit:
                                                               BoxFit.fill,
                                                               // placeholderScale: 1.0,
-                                                              image: AppUrl
-                                                                  .imageurl +
-                                                                  hData.latestrest[
-                                                                  index]
-                                                                  ["img"],
+                                                              image: hData.latestrest[index]["image"]?.toString() ?? "https://picsum.photos/300/200",
                                                               fit: BoxFit.cover,
                                                             ),
                                                             Positioned(
@@ -713,10 +809,10 @@ class _HomePageState extends State<HomePage> {
                                                                                   dateFormat ==
                                                                                       "Sunday") {
                                                                                 currentdiscount =
-                                                                                hData.latestrest[index]["frisun"];
+                                                                                hData.latestrest[index]["fridaySundayOffer"]?.toString() ?? "0";
                                                                               } else {
                                                                                 currentdiscount =
-                                                                                hData.latestrest[index]["monthru"];
+                                                                                hData.latestrest[index]["mondayThursdayOffer"]?.toString() ?? "0";
                                                                               }
 
                                                                               return Text(
@@ -752,8 +848,7 @@ class _HomePageState extends State<HomePage> {
                                                           height:
                                                           Get.height * 0.02),
                                                       Text(
-                                                        hData.latestrest[index]
-                                                        ["title"],
+                                                        hData.latestrest[index]["title"]?.toString() ?? "Restaurant",
                                                         style: TextStyle(
                                                             color:  notifier.textColor,
                                                             fontFamily:
@@ -768,8 +863,7 @@ class _HomePageState extends State<HomePage> {
                                                               color: yelloColor,
                                                               size: 22),
                                                           Text(
-                                                            hData.latestrest[
-                                                            index]["rate"],
+                                                            hData.latestrest[index]["rating"]?.toString() ?? "0.0",
                                                             style: TextStyle(
                                                                 color: greycolor,
                                                                 fontFamily:
@@ -787,9 +881,7 @@ class _HomePageState extends State<HomePage> {
                                                               width: Get.width *
                                                                   0.02),
                                                           Text(
-                                                            hData.latestrest[
-                                                            index]
-                                                            ["landmark"],
+                                                            hData.latestrest[index]["fullAddress"]?.toString() ?? "No address",
                                                             style: TextStyle(
                                                                 color: greycolor,
                                                                 fontFamily:
@@ -801,8 +893,7 @@ class _HomePageState extends State<HomePage> {
                                                       SizedBox(
                                                         width: Get.width * 0.45,
                                                         child: Text(
-                                                            hData.latestrest[
-                                                            index]["sdesc"],
+                                                            hData.latestrest[index]["shortDescription"]?.toString() ?? "No description",
                                                             style: TextStyle(
                                                                 color: greycolor,
                                                                 fontFamily:
@@ -817,6 +908,319 @@ class _HomePageState extends State<HomePage> {
                                           ),
                                         );
                                       }),
+
+                                  // Surprise Bags Section - TGTG Style
+                                  SizedBox(height: Get.height * 0.04),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        "Surprise Bags Near You".tr,
+                                        style: TextStyle(
+                                            color: notifier.textColor,
+                                            fontFamily: "Gilroy Bold",
+                                            fontSize: 20),
+                                      ),
+                                      TextButton(
+                                        onPressed: () {
+                                          // Navigate to all bags
+                                        },
+                                        child: Text(
+                                          "See all",
+                                          style: TextStyle(
+                                            color: orangeColor,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: Get.height * 0.02),
+                                  GetBuilder<HomeController>(
+                                      builder: (context) {
+                                        return hData.surpriseBags.isEmpty
+                                            ? Container(
+                                                height: Get.height * 0.25,
+                                                decoration: BoxDecoration(
+                                                  color: notifier.containerColor,
+                                                  borderRadius: BorderRadius.circular(16),
+                                                  border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                                                ),
+                                                child: Center(
+                                                  child: Column(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    children: [
+                                                      Icon(
+                                                        Icons.shopping_bag_outlined,
+                                                        size: 48,
+                                                        color: Colors.grey,
+                                                      ),
+                                                      SizedBox(height: 16),
+                                                      Text(
+                                                        "No surprise bags available".tr,
+                                                        style: TextStyle(
+                                                          color: notifier.textColor,
+                                                          fontSize: 16,
+                                                          fontWeight: FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                      SizedBox(height: 8),
+                                                      Text(
+                                                        "Check back later for new bags!".tr,
+                                                        style: TextStyle(
+                                                          color: Colors.grey,
+                                                          fontSize: 14,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              )
+                                            : SizedBox(
+                                                height: Get.height * 0.42,
+                                                width: double.infinity,
+                                                child: ListView.builder(
+                                                  scrollDirection: Axis.horizontal,
+                                                  shrinkWrap: true,
+                                                  padding: EdgeInsets.only(right: 16),
+                                                  itemCount: hData.surpriseBags.length,
+                                                  itemBuilder: (BuildContext context, int index) {
+                                                    var bag = hData.surpriseBags[index];
+                                                    // Find the restaurant for this bag
+                                                    var restaurant = hData.allrest.firstWhere(
+                                                      (r) => r["id"] == bag["restaurantId"],
+                                                      orElse: () => {
+                                                        "title": "Unknown Restaurant",
+                                                        "image": "",
+                                                        "address": "Address not available",
+                                                      },
+                                                    );
+
+                                                    return InkWell(
+                                                      onTap: () {
+                                                        Get.to(() => SurpriseBagDetails(
+                                                          bagData: bag,
+                                                          restaurantName: restaurant["title"] ?? "Unknown Restaurant",
+                                                          restaurantImage: restaurant["image"] ?? "",
+                                                          restaurantAddress: restaurant["address"] ?? "Address not available",
+                                                        ));
+                                                      },
+                                                      child: Container(
+                                                        margin: EdgeInsets.only(right: 16),
+                                                        width: Get.width * 0.72,
+                                                        decoration: BoxDecoration(
+                                                          borderRadius: BorderRadius.circular(16),
+                                                          color: notifier.containerColor,
+                                                          boxShadow: [
+                                                            BoxShadow(
+                                                              color: Colors.black.withOpacity(0.08),
+                                                              blurRadius: 12,
+                                                              offset: Offset(0, 4),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                        child: Column(
+                                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                                          children: [
+                                                            // Image with overlay
+                                                            Container(
+                                                              height: Get.height * 0.22,
+                                                              width: double.infinity,
+                                                              child: Stack(
+                                                                children: [
+                                                                  ClipRRect(
+                                                                    borderRadius: BorderRadius.only(
+                                                                      topLeft: Radius.circular(16),
+                                                                      topRight: Radius.circular(16),
+                                                                    ),
+                                                                    child: Image.network(
+                                                                      bag["image"] ?? restaurant["image"] ?? "https://picsum.photos/300/200",
+                                                                      fit: BoxFit.cover,
+                                                                      width: double.infinity,
+                                                                      height: double.infinity,
+                                                                      errorBuilder: (context, error, stackTrace) {
+                                                                        return Container(
+                                                                          color: Colors.grey[300],
+                                                                          child: Icon(Icons.restaurant, size: 50, color: Colors.grey),
+                                                                        );
+                                                                      },
+                                                                    ),
+                                                                  ),
+                                                                  // Availability badge
+                                                                  Positioned(
+                                                                    top: 12,
+                                                                    right: 12,
+                                                                    child: Container(
+                                                                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                                      decoration: BoxDecoration(
+                                                                        color: _getBagAvailabilityColor(bag),
+                                                                        borderRadius: BorderRadius.circular(12),
+                                                                      ),
+                                                                      child: Text(
+                                                                        "${bag["quantity"] ?? 1} left",
+                                                                        style: TextStyle(
+                                                                          color: Colors.white,
+                                                                          fontSize: 11,
+                                                                          fontWeight: FontWeight.bold,
+                                                                        ),
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                  // Pickup time badge
+                                                                  Positioned(
+                                                                    bottom: 12,
+                                                                    left: 12,
+                                                                    child: Container(
+                                                                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                                      decoration: BoxDecoration(
+                                                                        color: Colors.black.withOpacity(0.7),
+                                                                        borderRadius: BorderRadius.circular(8),
+                                                                      ),
+                                                                      child: Row(
+                                                                        mainAxisSize: MainAxisSize.min,
+                                                                        children: [
+                                                                          Icon(Icons.access_time, size: 12, color: Colors.white),
+                                                                          SizedBox(width: 4),
+                                                                          Text(
+                                                                            "${bag["pickupStartTime"] ?? "18:00"}-${bag["pickupEndTime"] ?? "20:00"}",
+                                                                            style: TextStyle(
+                                                                              color: Colors.white,
+                                                                              fontSize: 11,
+                                                                              fontWeight: FontWeight.w500,
+                                                                            ),
+                                                                          ),
+                                                                        ],
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            ),
+                                                            // Content section
+                                                            Expanded(
+                                                              child: Padding(
+                                                                padding: EdgeInsets.all(16),
+                                                                child: Column(
+                                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                                  children: [
+                                                                    // Restaurant name
+                                                                    Text(
+                                                                      restaurant["title"] ?? "Unknown Restaurant",
+                                                                      style: TextStyle(
+                                                                        fontFamily: "Gilroy Bold",
+                                                                        color: notifier.textColor,
+                                                                        fontSize: 16,
+                                                                      ),
+                                                                      maxLines: 1,
+                                                                      overflow: TextOverflow.ellipsis,
+                                                                    ),
+                                                                    SizedBox(height: 4),
+                                                                    // Distance and rating
+                                                                    Row(
+                                                                      children: [
+                                                                        Icon(Icons.location_on, size: 14, color: Colors.grey),
+                                                                        SizedBox(width: 4),
+                                                                        Text(
+                                                                          "0.5 km",
+                                                                          style: TextStyle(
+                                                                            color: Colors.grey,
+                                                                            fontSize: 12,
+                                                                          ),
+                                                                        ),
+                                                                        SizedBox(width: 12),
+                                                                        Icon(Icons.star, size: 14, color: Colors.amber),
+                                                                        SizedBox(width: 4),
+                                                                        Text(
+                                                                          "4.5",
+                                                                          style: TextStyle(
+                                                                            color: Colors.grey,
+                                                                            fontSize: 12,
+                                                                          ),
+                                                                        ),
+                                                                      ],
+                                                                    ),
+                                                                    SizedBox(height: 12),
+                                                                    // Bag title
+                                                                    Text(
+                                                                      bag["title"] ?? "Surprise Bag",
+                                                                      style: TextStyle(
+                                                                        color: notifier.textColor.withOpacity(0.8),
+                                                                        fontSize: 14,
+                                                                      ),
+                                                                      maxLines: 1,
+                                                                      overflow: TextOverflow.ellipsis,
+                                                                    ),
+                                                                    Spacer(),
+                                                                    // Price section
+                                                                    Row(
+                                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                                      children: [
+                                                                        Column(
+                                                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                                                          children: [
+                                                                            Row(
+                                                                              children: [
+                                                                                Text(
+                                                                                  "\$${bag["discountedPrice"] ?? "9.99"}",
+                                                                                  style: TextStyle(
+                                                                                    fontFamily: "Gilroy Bold",
+                                                                                    color: orangeColor,
+                                                                                    fontSize: 18,
+                                                                                  ),
+                                                                                ),
+                                                                                SizedBox(width: 8),
+                                                                                Text(
+                                                                                  "\$${bag["originalPrice"] ?? "29.99"}",
+                                                                                  style: TextStyle(
+                                                                                    color: Colors.grey,
+                                                                                    fontSize: 14,
+                                                                                    decoration: TextDecoration.lineThrough,
+                                                                                  ),
+                                                                                ),
+                                                                              ],
+                                                                            ),
+                                                                            SizedBox(height: 2),
+                                                                            Text(
+                                                                              "Save 67%",
+                                                                              style: TextStyle(
+                                                                                color: Colors.green,
+                                                                                fontSize: 12,
+                                                                                fontWeight: FontWeight.w600,
+                                                                              ),
+                                                                            ),
+                                                                          ],
+                                                                        ),
+                                                                        // Reserve button
+                                                                        Container(
+                                                                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                                          decoration: BoxDecoration(
+                                                                            color: orangeColor,
+                                                                            borderRadius: BorderRadius.circular(20),
+                                                                          ),
+                                                                          child: Text(
+                                                                            "Reserve",
+                                                                            style: TextStyle(
+                                                                              color: Colors.white,
+                                                                              fontSize: 12,
+                                                                              fontWeight: FontWeight.bold,
+                                                                            ),
+                                                                          ),
+                                                                        ),
+                                                                      ],
+                                                                    ),
+                                                                  ],
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ));
+                                                  },
+                                                ),
+                                              );
+                                      }),
+
                                   // SizedBox(height: Get.height * 0.04),
                                   Text(
                                     "Explore cuisines".tr,
@@ -840,13 +1244,16 @@ class _HomePageState extends State<HomePage> {
                                                 int index) {
                                               return InkWell(
                                                 onTap: () {
-                                                  Get.to(() => Cuisines(
-                                                    title: hData.CuisineList[
-                                                    index]["title"],
-                                                    hotelid:
-                                                    hData.CuisineList[
-                                                    index]["id"],
-                                                  ));
+                                                  String? cuisineTitle = hData.CuisineList[index]["title"]?.toString();
+                                                  String? cuisineId = hData.CuisineList[index]["id"]?.toString();
+                                                  if (cuisineTitle != null && cuisineId != null) {
+                                                    Get.to(() => Cuisines(
+                                                      title: cuisineTitle,
+                                                      hotelid: cuisineId,
+                                                    ));
+                                                  } else {
+                                                    Get.snackbar("Error", "Cuisine data not found");
+                                                  }
                                                 },
                                                 child: Container(
                                                   width: Get.width * 0.25,
@@ -854,11 +1261,7 @@ class _HomePageState extends State<HomePage> {
                                                     children: [
                                                       CircleAvatar(
                                                           backgroundImage:
-                                                          NetworkImage(AppUrl
-                                                              .imageurl +
-                                                              hData.CuisineList[
-                                                              index]
-                                                              ["img"]),
+                                                          NetworkImage(hData.CuisineList[index]["image"]?.toString() ?? "https://picsum.photos/100/100"),
                                                           radius: 35,
                                                           backgroundColor:
                                                           transparent),
@@ -869,11 +1272,10 @@ class _HomePageState extends State<HomePage> {
                                                         width: Get.width * 0.23,
                                                         child: Center(
                                                           child: Text(
-                                                            hData.CuisineList[
-                                                            index]["title"],
+                                                            hData.CuisineList[index]["title"]?.toString() ?? "Cuisine",
                                                             style: TextStyle(
                                                                 fontSize: 13,
-                                                                color: WhiteColor,
+                                                                color: BlackColor,
                                                                 fontFamily:
                                                                 "Gilroy Medium"),
                                                           ),
@@ -911,10 +1313,12 @@ class _HomePageState extends State<HomePage> {
                                                   int pageViewIndex) {
                                                 return InkWell(
                                                   onTap: () {
-                                                    Get.to(() => HotelDetails(
-                                                        detailId: hData
-                                                            .allrest[
-                                                        index]["id"]));
+                                                    String? restaurantId = hData.allrest[index]["id"]?.toString();
+                                                    if (restaurantId != null && restaurantId.isNotEmpty) {
+                                                      Get.to(() => HotelDetails(detailId: restaurantId));
+                                                    } else {
+                                                      Get.snackbar("Error", "Restaurant ID not found");
+                                                    }
                                                   },
                                                   child: Stack(
                                                     children: [
@@ -956,11 +1360,7 @@ class _HomePageState extends State<HomePage> {
                                                             placeholderFit:
                                                             BoxFit.fill,
                                                             // placeholderScale: 1.0,
-                                                            image: AppUrl
-                                                                .imageurl +
-                                                                hData.allrest[
-                                                                index]
-                                                                ["img"],
+                                                            image: hData.allrest[index]["image"] ?? "https://picsum.photos/300/200",
                                                             fit: BoxFit
                                                                 .cover,
                                                           ),
@@ -1043,10 +1443,10 @@ class _HomePageState extends State<HomePage> {
                                                                             dateFormat ==
                                                                                 "Sunday") {
                                                                           currentdiscount =
-                                                                          hData.allrest[index]["frisun"];
+                                                                          hData.allrest[index]["fridaySundayOffer"]?.toString() ?? "0";
                                                                         } else {
                                                                           currentdiscount =
-                                                                          hData.allrest[index]["monthru"];
+                                                                          hData.allrest[index]["mondayThursdayOffer"]?.toString() ?? "0";
                                                                         }
 
                                                                         return Text(
@@ -1088,9 +1488,7 @@ class _HomePageState extends State<HomePage> {
                                                                     .height *
                                                                     0.08),
                                                             Text(
-                                                              hData.allrest[
-                                                              index]
-                                                              ["title"],
+                                                              hData.allrest[index]["title"]?.toString() ?? "Restaurant",
                                                               style: TextStyle(
                                                                   fontSize:
                                                                   16,
@@ -1109,10 +1507,7 @@ class _HomePageState extends State<HomePage> {
                                                                     size:
                                                                     22),
                                                                 Text(
-                                                                  hData.allrest[
-                                                                  index]
-                                                                  [
-                                                                  "rate"],
+                                                                  hData.allrest[index]["rating"]?.toString() ?? "0.0",
                                                                   style: TextStyle(
                                                                       color:
                                                                       greycolor,
@@ -1133,10 +1528,7 @@ class _HomePageState extends State<HomePage> {
                                                                     width: Get.width *
                                                                         0.02),
                                                                 Text(
-                                                                  hData.allrest[
-                                                                  index]
-                                                                  [
-                                                                  "landmark"],
+                                                                  hData.allrest[index]["area"]?.toString() ?? "No address",
                                                                   style: TextStyle(
                                                                       color:
                                                                       greycolor,
@@ -1152,10 +1544,7 @@ class _HomePageState extends State<HomePage> {
                                                               Get.width *
                                                                   0.4,
                                                               child: Text(
-                                                                  hData.allrest[
-                                                                  index]
-                                                                  [
-                                                                  "sdesc"],
+                                                                  hData.allrest[index]["description"]?.toString() ?? "No description",
                                                                   style: TextStyle(
                                                                       color:
                                                                       greycolor,
@@ -1186,12 +1575,7 @@ class _HomePageState extends State<HomePage> {
                           ],
                         ),
                       ],
-                    )
-                        : Center(
-                        child: Padding(
-                          padding: EdgeInsets.only(top: Get.height * 0.4),
-                          child:  CircularProgressIndi(),
-                        )));
+                    ));
               })),
         ),
       ),
@@ -1247,196 +1631,197 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  bottomsheet() {
-    // Get.back();
-    return showModalBottomSheet(
-        backgroundColor: RedColor.withOpacity(0.9),
-        isScrollControlled: true,
-        context: context,
-        shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(15), topRight: Radius.circular(15))),
-        builder: (context) {
-          return StatefulBuilder(
-              builder: (BuildContext context, StateSetter setState) {
-                return Container(
-                  height: Get.height * 0.35,
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Image.asset("assets/confetti1.png", height: 25),
-                          SizedBox(width: Get.width * 0.02),
-                          Text("special prices only for you".tr.toUpperCase(),
-                              style: TextStyle(
-                                  fontFamily: "Gilroy Bold",
-                                  color: orangeColor,
-                                  fontSize: 15)),
-                          SizedBox(width: Get.width * 0.02),
-                          Image.asset("assets/confetti.png", height: 25)
-                        ],
-                      ),
-                      SizedBox(
-                        height: Get.height * 0.2,
-                        width: double.infinity,
-                        child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            shrinkWrap: true,
-                            padding: EdgeInsets.zero,
-                            itemCount: hData.PlanData.length,
-                            itemBuilder: (context, index) {
-                              return Stack(children: [
-                                Container(
-                                  height: 150,
-                                  width: 172,
-
-                                  padding: EdgeInsets.symmetric(
-                                      vertical: 16, horizontal: 6),
-                                  child: InkWell(
-                                    onTap: () {
-                                      setState(() {});
-                                      defultplan = true;
-                                      SelectedIndex = hData.PlanData[index]["id"];
-                                      print(
-                                          "*+*+*+*+*+*+*-+-/-+ hData PlanData-*-+*-*/-+*----*-+-*+-*+"
-                                              "${hData.PlanData[index]["price"]}");
-                                      plan1 = hData.PlanData[index]["title"];
-                                      plan2 = hData.PlanData[index]["price"];
-                                      planid = hData.PlanData[index]["id"];
-                                      planprice = hData.PlanData[index]["price"];
-                                    },
-                                    child: Container(
-                                      padding: EdgeInsets.symmetric(
-                                          horizontal: 14, vertical: 6),
-                                      decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(12),
-                                          color: notifier.background,
-                                          border: Border.all(
-                                              color: SelectedIndex ==
-                                                  hData.PlanData[index]["id"]
-                                                  ? orangeColor
-                                                  : transparent,
-                                              width: 2)),
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                        children: [
-                                          Text(hData.PlanData[index]["title"],
-                                              style: TextStyle(
-                                                  color:  notifier.textColor,
-                                                  fontFamily: "Gilroy Bold",
-                                                  fontSize: 16)),
-                                          SizedBox(height: Get.height * 0.015),
-                                          Row(
-                                            children: [
-                                              Text(
-                                                  "${hData.homeDataList["currency"]}${hData.PlanData[index]["price"]}",
-                                                  style: TextStyle(
-                                                      color:  notifier.textColor,
-                                                      fontFamily: "Gilroy Bold",
-                                                      fontSize: 18)),
-                                            ],
-                                          ),
-                                          SizedBox(height: Get.height * 0.015),
-                                          Text("${hData.PlanData[index]["day"]}day",
-                                              style: TextStyle(
-                                                  color: darkpurple,
-                                                  fontFamily: "Gilroy Bold",
-                                                  fontSize: 16))
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  right: -0.2,
-                                  top: 4,
-                                  child: InkWell(
-                                    onTap: () {
-                                      // selected = selected;
-                                    },
-                                    child: CircleAvatar(
-                                      radius: 14,
-                                      backgroundColor: SelectedIndex ==
-                                          hData.PlanData[index]["id"]
-                                          ? orangeColor
-                                          : transparent,
-                                      child: Icon(Icons.check,
-                                          color: SelectedIndex ==
-                                              hData.PlanData[index]["id"]
-                                              ?  notifier.textColor
-                                              : transparent),
-                                    ),
-                                  ),
-                                )
-                              ]);
-                            }),
-                      ),
-                      InkWell(
-                        onTap: () {
-                          // ignore: unnecessary_null_comparison
-                          if (planprice != null) {
-                            Get.back();
-                            paymentSheett();
-                          } else {
-                            ApiWrapper.showToastMessage(
-                                "Please select at least one plan".tr);
-                          }
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                stops: [0.1, 0.8, 1],
-                                colors: <Color>[
-                                  orangeColor,
-                                  orangeColor,
-                                  Colors.red
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                              color: orangeColor),
-                          padding: EdgeInsets.symmetric(vertical: 5),
-                          width: double.infinity,
-                          child: Center(
-                            child: Column(
-                              children: [
-                                Text(
-                                  "buy EasyGo".tr.toUpperCase(),
-                                  style: TextStyle(
-                                      fontFamily: 'Gilroy Bold',
-                                      fontSize: 16,
-                                      color: WhiteColor),
-                                ),
-                                SizedBox(height: 2),
-                                !defultplan
-                                    ? Text(
-                                  "select plan".tr,
-                                  style: TextStyle(
-                                      fontFamily: 'Gilroy Bold',
-                                      fontSize: 14,
-                                      color: WhiteColor),
-                                )
-                                    : Text(
-                                  "at ${hData.homeDataList["currency"]}${plan2} for ${plan1}",
-                                  style: TextStyle(
-                                      fontFamily: 'Gilroy Bold',
-                                      fontSize: 14,
-                                      color: WhiteColor),
-                                )
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              });
-        });
-  }
+  // Plan section removed as requested
+  // bottomsheet() {
+  //   // Get.back();
+  //   return showModalBottomSheet(
+  //       backgroundColor: RedColor.withOpacity(0.9),
+  //       isScrollControlled: true,
+  //       context: context,
+  //       shape: const RoundedRectangleBorder(
+  //           borderRadius: BorderRadius.only(
+  //               topLeft: Radius.circular(15), topRight: Radius.circular(15))),
+  //       builder: (context) {
+  //         return StatefulBuilder(
+  //             builder: (BuildContext context, StateSetter setState) {
+  //               return Container(
+  //                 height: Get.height * 0.35,
+  //                 padding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+  //                 child: Column(
+  //                   children: [
+  //                     Row(
+  //                       mainAxisAlignment: MainAxisAlignment.center,
+  //                       children: [
+  //                         Image.asset("assets/confetti1.png", height: 25),
+  //                         SizedBox(width: Get.width * 0.02),
+  //                         Text("special prices only for you".tr.toUpperCase(),
+  //                             style: TextStyle(
+  //                                 fontFamily: "Gilroy Bold",
+  //                                 color: orangeColor,
+  //                                 fontSize: 15)),
+  //                         SizedBox(width: Get.width * 0.02),
+  //                         Image.asset("assets/confetti.png", height: 25)
+  //                       ],
+  //                     ),
+  //                     SizedBox(
+  //                       height: Get.height * 0.2,
+  //                       width: double.infinity,
+  //                       child: ListView.builder(
+  //                           scrollDirection: Axis.horizontal,
+  //                           shrinkWrap: true,
+  //                           padding: EdgeInsets.zero,
+  //                           itemCount: hData.PlanData.length,
+  //                           itemBuilder: (context, index) {
+  //                             return Stack(children: [
+  //                               Container(
+  //                                 height: 150,
+  //                                 width: 172,
+  //
+  //                                 padding: EdgeInsets.symmetric(
+  //                                     vertical: 16, horizontal: 6),
+  //                                 child: InkWell(
+  //                                   onTap: () {
+  //                                     setState(() {});
+  //                                     defultplan = true;
+  //                                     SelectedIndex = hData.PlanData[index]["id"];
+  //                                     print(
+  //                                         "*+*+*+*+*+*+*-+-/-+ hData PlanData-*-+*-*/-+*----*-+-*+-*+"
+  //                                             "${hData.PlanData[index]["price"]}");
+  //                                     plan1 = hData.PlanData[index]["title"];
+  //                                     plan2 = hData.PlanData[index]["price"];
+  //                                     planid = hData.PlanData[index]["id"];
+  //                                     planprice = hData.PlanData[index]["price"];
+  //                                   },
+  //                                   child: Container(
+  //                                     padding: EdgeInsets.symmetric(
+  //                                         horizontal: 14, vertical: 6),
+  //                                     decoration: BoxDecoration(
+  //                                         borderRadius: BorderRadius.circular(12),
+  //                                         color: notifier.background,
+  //                                         border: Border.all(
+  //                                             color: SelectedIndex ==
+  //                                                 hData.PlanData[index]["id"]
+  //                                                 ? orangeColor
+  //                                                 : transparent,
+  //                                             width: 2)),
+  //                                     child: Column(
+  //                                       mainAxisAlignment: MainAxisAlignment.center,
+  //                                       crossAxisAlignment:
+  //                                       CrossAxisAlignment.start,
+  //                                       children: [
+  //                                         Text(hData.PlanData[index]["title"],
+  //                                             style: TextStyle(
+  //                                                 color:  notifier.textColor,
+  //                                                 fontFamily: "Gilroy Bold",
+  //                                                 fontSize: 16)),
+  //                                         SizedBox(height: Get.height * 0.015),
+  //                                         Row(
+  //                                           children: [
+  //                                             Text(
+  //                                                 "${hData.homeDataList["currency"]}${hData.PlanData[index]["price"]}",
+  //                                                 style: TextStyle(
+  //                                                     color:  notifier.textColor,
+  //                                                     fontFamily: "Gilroy Bold",
+  //                                                     fontSize: 18)),
+  //                                           ],
+  //                                         ),
+  //                                         SizedBox(height: Get.height * 0.015),
+  //                                         Text("${hData.PlanData[index]["day"]}day",
+  //                                             style: TextStyle(
+  //                                                 color: darkpurple,
+  //                                                 fontFamily: "Gilroy Bold",
+  //                                                 fontSize: 16))
+  //                                       ],
+  //                                     ),
+  //                                   ),
+  //                                 ),
+  //                               ),
+  //                               Positioned(
+  //                                 right: -0.2,
+  //                                 top: 4,
+  //                                 child: InkWell(
+  //                                   onTap: () {
+  //                                     // selected = selected;
+  //                                   },
+  //                                   child: CircleAvatar(
+  //                                     radius: 14,
+  //                                     backgroundColor: SelectedIndex ==
+  //                                         hData.PlanData[index]["id"]
+  //                                         ? orangeColor
+  //                                         : transparent,
+  //                                     child: Icon(Icons.check,
+  //                                         color: SelectedIndex ==
+  //                                             hData.PlanData[index]["id"]
+  //                                             ?  notifier.textColor
+  //                                             : transparent),
+  //                                   ),
+  //                                 ),
+  //                               )
+  //                             ]);
+  //                           }),
+  //                     ),
+  //                     InkWell(
+  //                       onTap: () {
+  //                         // ignore: unnecessary_null_comparison
+  //                         if (planprice != null) {
+  //                           Get.back();
+  //                           paymentSheett();
+  //                         } else {
+  //                           ApiWrapper.showToastMessage(
+  //                               "Please select at least one plan".tr);
+  //                         }
+  //                       },
+  //                       child: Container(
+  //                         decoration: BoxDecoration(
+  //                             gradient: LinearGradient(
+  //                               stops: [0.1, 0.8, 1],
+  //                               colors: <Color>[
+  //                                 orangeColor,
+  //                                 orangeColor,
+  //                                 Colors.red
+  //                               ],
+  //                             ),
+  //                             borderRadius: BorderRadius.circular(12),
+  //                             color: orangeColor),
+  //                         padding: EdgeInsets.symmetric(vertical: 5),
+  //                         width: double.infinity,
+  //                         child: Center(
+  //                           child: Column(
+  //                             children: [
+  //                               Text(
+  //                                 "buy EasyGo".tr.toUpperCase(),
+  //                                 style: TextStyle(
+  //                                     fontFamily: 'Gilroy Bold',
+  //                                     fontSize: 16,
+  //                                     color: WhiteColor),
+  //                               ),
+  //                               SizedBox(height: 2),
+  //                               !defultplan
+  //                                   ? Text(
+  //                                 "select plan".tr,
+  //                                 style: TextStyle(
+  //                                     fontFamily: 'Gilroy Bold',
+  //                                     fontSize: 14,
+  //                                     color: WhiteColor),
+  //                               )
+  //                                   : Text(
+  //                                 "at ${hData.homeDataList["currency"]}${plan2} for ${plan1}",
+  //                                 style: TextStyle(
+  //                                     fontFamily: 'Gilroy Bold',
+  //                                     fontSize: 14,
+  //                                     color: WhiteColor),
+  //                               )
+  //                             ],
+  //                           ),
+  //                         ),
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 ),
+  //               );
+  //             });
+  //       });
+  // }
 
   Future paymentSheett() {
     return showModalBottomSheet(
@@ -1499,8 +1884,7 @@ class _HomePageState extends State<HomePage> {
                                 ["title"],
                                 titleColor: WhiteColor,
                                 val: 0,
-                                image: AppUrl.imageurl +
-                                    payment.paymentGetway[i]["img"],
+                                image: payment.paymentGetway[i]["image"] ?? "https://picsum.photos/100/100",
                                 adress: payment.paymentGetway[i]
                                 ["subtitle"],
                                 ontap: () async {
@@ -1590,13 +1974,11 @@ class _HomePageState extends State<HomePage> {
                                   print("PAYSTACK URL  ${request.url}");
                                   Get.back();
                                   Get.back();
-                                  paystackCont.checkPaystack(sKey:   planpurchase.planpurchase(
+                                  // Plan functionality disabled
+                                  planpurchase.planpurchase(
                                       planid: planid,
                                       pname: paymenttital,
-                                      transactionid: "transactionid") )
-                                      .then((value) {
-
-                                  },);
+                                      transactionid: "transactionid");
 
                                   return NavigationDecision.navigate;
                                 },
@@ -2216,6 +2598,14 @@ class _HomePageState extends State<HomePage> {
   //     },
   //   ));
   // }
+
+  // Helper method for bag availability color
+  Color _getBagAvailabilityColor(Map<String, dynamic> bag) {
+    int quantity = int.tryParse(bag["quantity"]?.toString() ?? "0") ?? 0;
+    if (quantity > 5) return Colors.green;
+    if (quantity > 0) return Colors.orange;
+    return Colors.red;
+  }
 }
 
 Future tost(String text) {
@@ -2234,4 +2624,11 @@ class Slide {
   String image;
 
   Slide(this.image);
+}
+
+// Dummy class to replace plan functionality
+class _DummyPlanPurchase {
+  void planpurchase({String? planid, String? pname, String? transactionid}) {
+    print("Plan functionality disabled - would have processed: planid=$planid, pname=$pname, transactionid=$transactionid");
+  }
 }

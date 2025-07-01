@@ -23,9 +23,35 @@ class HoteldetailController extends GetxController {
 
       if (result['Result'] == 'true') {
         hoteldetails = result["restdata"] ?? {};
-        restdata = List.from(result["restdata"]["featurelist"] ?? []);
-        storyview = List.from(result["restdata"]["img"] ?? []);
-        relatedrest = List.from(result["related_rest"] ?? []);
+        // Safely handle featurelist - could be string or list
+        var featurelistData = result["restdata"]["featurelist"];
+        if (featurelistData is List) {
+          restdata = List.from(featurelistData);
+        } else if (featurelistData is String && featurelistData.isNotEmpty) {
+          // If it's a string, try to split it or create a single item list
+          restdata = [{"title": featurelistData, "image": ""}];
+        } else {
+          restdata = [];
+        }
+
+        // Safely handle img - could be string or list
+        var imgData = result["restdata"]["img"];
+        if (imgData is List) {
+          storyview = List.from(imgData);
+        } else if (imgData is String && imgData.isNotEmpty) {
+          // If it's a string, create a single item list
+          storyview = [{"image": imgData}];
+        } else {
+          storyview = [];
+        }
+
+        // Safely handle related_rest
+        var relatedData = result["related_rest"];
+        if (relatedData is List) {
+          relatedrest = List.from(relatedData);
+        } else {
+          relatedrest = [];
+        }
 
         isLoading = true;
         update();

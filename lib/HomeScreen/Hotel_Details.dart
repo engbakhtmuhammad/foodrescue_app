@@ -81,17 +81,17 @@ class _HotelDetailsState extends State<HotelDetails>
       GetBuilder<HoteldetailController>(builder: (context) {
         return Tab1(
           restid: widget.detailId,
-          address: hoteldata.hoteldetails["address"],
-          hotelname: hoteldata.hoteldetails["title"],
-          tip: hoteldata.hoteldetails["monthru"],
+          address: hoteldata.hoteldetails["fullAddress"]?.toString() ?? "No address",
+          hotelname: hoteldata.hoteldetails["title"]?.toString() ?? "Restaurant",
+          tip: hoteldata.hoteldetails["mondayThursdayOffer"]?.toString() ?? "0",
         );
       }),
       GetBuilder<HoteldetailController>(builder: (context) {
         return Tab2(
             restid: widget.detailId,
-            address: hoteldata.hoteldetails["address"],
-            hotelname: hoteldata.hoteldetails["title"],
-            tip: hoteldata.hoteldetails["frisun"]);
+            address: hoteldata.hoteldetails["fullAddress"]?.toString() ?? "No address",
+            hotelname: hoteldata.hoteldetails["title"]?.toString() ?? "Restaurant",
+            tip: hoteldata.hoteldetails["fridaySundayOffer"]?.toString() ?? "0");
       }),
     ];
 
@@ -127,8 +127,8 @@ class _HotelDetailsState extends State<HotelDetails>
                     return hoteldata.isLoading ? Stack(
                       children: [
                         GetBuilder<HoteldetailController>(builder: (context) {
-                          String time = hoteldata.hoteldetails["open_time"];
-                          String closetime = hoteldata.hoteldetails["close_time"];
+                          String time = hoteldata.hoteldetails["openTime"]?.toString() ?? "09:00";
+                          String closetime = hoteldata.hoteldetails["closeTime"]?.toString() ?? "22:00";
                           List<String> durations = time.split(':');
                           List<String> close = closetime.split(':');
                           print('${durations[0]} hours ${durations[1]} minutes ');
@@ -219,7 +219,7 @@ class _HotelDetailsState extends State<HotelDetails>
                                 GetBuilder<HoteldetailController>(
                                     builder: (context) {
                                   String opentime =
-                                      "2023-03-20T${hoteldata.hoteldetails["open_time"]}";
+                                      "2023-03-20T${hoteldata.hoteldetails["openTime"]?.toString() ?? "09:00"}";
                                   return Text(
                                     "Open time: ${DateFormat.jm().format(DateTime.parse(opentime))}"
                                         .toUpperCase(),
@@ -234,7 +234,7 @@ class _HotelDetailsState extends State<HotelDetails>
                                 GetBuilder<HoteldetailController>(
                                     builder: (context) {
                                   String closetime =
-                                      "2023-03-20T${hoteldata.hoteldetails["close_time"]}";
+                                      "2023-03-20T${hoteldata.hoteldetails["closeTime"]?.toString() ?? "22:00"}";
                                   return Text(
                                     "Close time: ${DateFormat.jm().format(DateTime.parse(closetime))}"
                                         .toUpperCase(),
@@ -247,7 +247,7 @@ class _HotelDetailsState extends State<HotelDetails>
                                 }),
                                 SizedBox(height: Get.height * 0.02),
                                 Text(
-                                  hoteldata.hoteldetails["title"],
+                                  hoteldata.hoteldetails["title"]?.toString() ?? "Restaurant",
                                   style: TextStyle(
                                       fontFamily: "Gilroy ExtraBold",
                                       color: notifier.textColor,
@@ -257,7 +257,7 @@ class _HotelDetailsState extends State<HotelDetails>
                                 SizedBox(
                                   width: Get.width * 0.92,
                                   child: Text(
-                                    hoteldata.hoteldetails["sdesc"],
+                                    hoteldata.hoteldetails["shortDescription"]?.toString() ?? "No shortDescription available",
                                     style: TextStyle(
                                         fontFamily: "Gilroy Medium",
                                         color: greycolor,
@@ -276,7 +276,7 @@ class _HotelDetailsState extends State<HotelDetails>
                                 GetBuilder<HoteldetailController>(
                                     builder: (context) {
                                   String str =
-                                      hoteldata.hoteldetails["popular_dish"];
+                                      hoteldata.hoteldetails["popularDishes"]?.toString() ?? "";
                                   strarray = str.split(",");
                                   return GridView(
                                       shrinkWrap: true,
@@ -336,7 +336,7 @@ class _HotelDetailsState extends State<HotelDetails>
                                         height: 16, color: yelloColor),
                                     SizedBox(width: Get.width * 0.02),
                                     Text(
-                                      hoteldata.hoteldetails["rate"],
+                                      hoteldata.hoteldetails["rating"]?.toString() ?? "0.0",
                                       style: TextStyle(
                                           fontFamily: "Gilroy Bold",
                                           color: notifier.textColor,
@@ -349,7 +349,7 @@ class _HotelDetailsState extends State<HotelDetails>
                                     ),
                                     SizedBox(width: Get.width * 0.02),
                                     Text(
-                                      "${homeapi.homeDataList["currency"]}${hoteldata.hoteldetails["cost_two"]}",
+                                      "${homeapi.homeDataList["currency"]}${hoteldata.hoteldetails["approxPrice"]?.toString() ?? "0"}",
                                       style: TextStyle(
                                           fontFamily: "Gilroy Bold",
                                           color: notifier.textColor,
@@ -474,7 +474,7 @@ class _HotelDetailsState extends State<HotelDetails>
                                           width: double.infinity,
                                           child: SizedBox(
                                             height: hoteldata.hoteldetails[
-                                                        "show_table"] !=
+                                                        "tShow"] !=
                                                     "0"
                                                 ? Get.height * 0.22
                                                 : Get.height * 0.14,
@@ -520,7 +520,7 @@ class _HotelDetailsState extends State<HotelDetails>
                                   width: Get.width * 0.80,
                                   child: RichText(
                                     text: TextSpan(
-                                      text: hoteldata.hoteldetails["address"],
+                                      text: hoteldata.hoteldetails["fullAddress"]?.toString() ?? "No address available",
                                       style: TextStyle(
                                           fontFamily: "Gilroy Medium",
                                           color: greycolor,
@@ -532,15 +532,15 @@ class _HotelDetailsState extends State<HotelDetails>
                                 InkWell(
                                   onTap: () {
                                     openMap(
-                                        double.parse(
-                                            hoteldata.hoteldetails["latitude"]),
-                                        double.parse(hoteldata
-                                            .hoteldetails["longtitude"]));
+                                        double.tryParse(
+                                            hoteldata.hoteldetails["latitude"]?.toString() ?? "0.0") ?? 0.0,
+                                        double.tryParse(hoteldata
+                                            .hoteldetails["longtitude"]?.toString() ?? "0.0") ?? 0.0);
                                   },
                                   child: RichText(
                                     text: TextSpan(
                                       text:
-                                          "${hoteldata.hoteldetails["rest_distance"]} away |",
+                                          "${hoteldata.hoteldetails["rest_distance"]?.toString() ?? "0.0"} away |",
                                       style: TextStyle(
                                           fontFamily: "Gilroy Medium",
                                           color: orangeColor,
@@ -576,7 +576,7 @@ class _HotelDetailsState extends State<HotelDetails>
                                 viewmenu(
                                     onTap: () async {
                                       Uri phoneno = Uri.parse(
-                                          'tel:${hoteldata.hoteldetails["mobile"]}');
+                                          'tel:${hoteldata.hoteldetails["mobile"]?.toString() ?? ""}');
                                       if (await launchUrl(phoneno)) {
                                         //dialer opened
                                       } else {
@@ -585,7 +585,7 @@ class _HotelDetailsState extends State<HotelDetails>
                                     },
                                     image: image.telephone,
                                     titletext: provider.Call,
-                                    Subtext: hoteldata.hoteldetails["mobile"]),
+                                    Subtext: hoteldata.hoteldetails["mobile"]?.toString() ?? "No phone number"),
                                 SizedBox(height: Get.height * 0.03),
                                 Text(
                                   provider.Features,
@@ -609,16 +609,13 @@ class _HotelDetailsState extends State<HotelDetails>
                                           Row(
                                             children: [
                                               Image.network(
-                                                  AppUrl.imageurl +
-                                                      hoteldata.restdata[index]
-                                                          ["img"],
+                                                  hoteldata.restdata[index]["img"] ?? "https://picsum.photos/30/30",
                                                   height: 30,
                                                   width: 30),
                                               SizedBox(width: Get.width * 0.04),
                                               SizedBox(
                                                 child: Text(
-                                                  hoteldata.restdata[index]
-                                                      ["title"],
+                                                  hoteldata.restdata[index]["title"]?.toString() ?? "Feature",
                                                   textAlign: TextAlign.center,
                                                   style: TextStyle(
                                                       fontFamily:
@@ -779,10 +776,10 @@ class _HotelDetailsState extends State<HotelDetails>
                                                                           dateFormat ==
                                                                               "Sunday") {
                                                                         currentdiscount =
-                                                                            hoteldata.relatedrest[index]["frisun"];
+                                                                            hoteldata.relatedrest[index]["fridaySundayOffer"]?.toString() ?? "0";
                                                                       } else {
                                                                         currentdiscount =
-                                                                            hoteldata.relatedrest[index]["monthru"];
+                                                                            hoteldata.relatedrest[index]["mondayThursdayOffer"]?.toString() ?? "0";
                                                                       }
                                                                       return Text(
                                                                           "${currentdiscount}% OFF",
@@ -819,8 +816,7 @@ class _HotelDetailsState extends State<HotelDetails>
                                                             .start,
                                                     children: [
                                                       Text(
-                                                          hoteldata.relatedrest[
-                                                              index]["title"],
+                                                          hoteldata.relatedrest[index]["title"]?.toString() ?? "Restaurant",
                                                           style: TextStyle(
                                                               fontFamily:
                                                                   "Gilroy Bold",
@@ -840,7 +836,8 @@ class _HotelDetailsState extends State<HotelDetails>
                                                           Text(
                                                             hoteldata
                                                                     .relatedrest[
-                                                                index]["rate"],
+                                                                index]["rating"]
+                                                                    ?.toString() ?? "0.0" ,
                                                             style: TextStyle(
                                                                 color:
                                                                     greycolor,
@@ -859,9 +856,7 @@ class _HotelDetailsState extends State<HotelDetails>
                                                               width: Get.width *
                                                                   0.02),
                                                           Text(
-                                                            hoteldata.relatedrest[
-                                                                    index]
-                                                                ["landmark"],
+                                                            hoteldata.relatedrest[index]["area"]?.toString() ?? "No address",
                                                             style: TextStyle(
                                                                 color:
                                                                     greycolor,
@@ -877,8 +872,7 @@ class _HotelDetailsState extends State<HotelDetails>
                                                       SizedBox(
                                                         width: Get.width * 0.50,
                                                         child: Text(
-                                                          hoteldata.relatedrest[
-                                                              index]["sdesc"],
+                                                          hoteldata.relatedrest[index]["shortDescription"]?.toString() ?? "No shortDescription",
                                                           style: TextStyle(
                                                               color: greycolor,
                                                               fontFamily:
@@ -959,7 +953,7 @@ class _HotelDetailsState extends State<HotelDetails>
         storyItems: [
           for (var i = 0; i < hoteldata.storyview.length; i++)
             StoryItem.inlineImage(
-                url: AppUrl.imageurl + hoteldata.storyview[i],
+                url: hoteldata.storyview[i]["image"] ?? "https://picsum.photos/400/600",
                 controller: storyController),
         ],
         // onStoryShow: (s) {

@@ -1,10 +1,10 @@
 // ignore_for_file: sized_box_for_whitespace, prefer_const_constructors, file_names, must_be_immutable, unnecessary_string_interpolations, use_key_in_widget_constructors
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:foodrescue_app/Getx_Controller/Controller.dart';
 import 'package:foodrescue_app/Utils/Custom_widegt.dart';
 import 'package:foodrescue_app/config/app_config.dart';
 import 'package:flutter/material.dart';
+import 'package:foodrescue_app/controllers/home_controller.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -81,7 +81,7 @@ class _MenuState extends State<Menu> {
                           InkWell(
                             onTap: () {
                               Get.to(() => FullScreenImage(
-                                  imageUrl: AppUrl.imageurl +
+                                  imageUrl:
                                       menulist.viewmenu[index]["img"],
                                   tag: "generate_a_unique_tag"));
                             },
@@ -97,7 +97,7 @@ class _MenuState extends State<Menu> {
                                 placeholderCacheWidth: 240,
                                 placeholderFit: BoxFit.fill,
                                 // placeholderScale: 1.0,
-                                image: AppUrl.imageurl +
+                                image:
                                     menulist.viewmenu[index]["img"],
                                 fit: BoxFit.cover,
                               ),

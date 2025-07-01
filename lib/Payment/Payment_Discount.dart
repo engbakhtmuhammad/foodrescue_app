@@ -68,10 +68,8 @@ class _PaymentDiscountState extends State<PaymentDiscount> {
               if (amountcontroller.text != "") {
                 Get.to(() => PaymentDetails(
                       bilamount: double.parse(amountcontroller.text),
-                      tip: widget.tipamount,
+                      tip: double.tryParse(widget.tipamount ?? "0") ?? 0.0,
                       address: widget.address,
-                      hotelname: widget.hotelname,
-                      restid: widget.restid,
                     ));
               } else {
                 Fluttertoast.showToast(

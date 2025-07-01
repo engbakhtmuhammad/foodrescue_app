@@ -12,6 +12,7 @@ import 'api/Data_save.dart';
 import 'config/app_config.dart';
 import 'controllers/auth_controller.dart';
 import 'controllers/home_controller.dart';
+import 'controllers/reservation_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,6 +24,7 @@ void main() async {
   // Initialize controllers
   Get.put(AuthController());
   Get.put(HomeController());
+  Get.put(ReservationController());
 
   initPlatformState();
   runApp(
