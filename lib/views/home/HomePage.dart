@@ -1,4 +1,6 @@
-// ignore_for_file: file_names, prefer_const_constructors, sized_box_for_whitespace, unused_import, sort_child_properties_last, non_constant_identifier_names, prefer_const_literals_to_create_immutables, unnecessary_brace_in_string_interps, avoid_print, prefer_typing_uninitialized_variables, unused_local_variable, unused_field, prefer_final_fields, prefer_interpolation_to_compose_strings, avoid_types_as_parameter_names, deprecated_member_use
+// ignore_for_file: file_names, prefer_const_constructors, sized_box_for_whitespace, unused_import, sort_child_properties_last, non_constant_identifier_names, prefer_const_literals_to_create_immutables, unnecessary_brace_in_string_interps, avoid_print, prefer_typing_uninitialized_variables, unused_local_variable, unused_field, prefer_final_fields, prefer_interpolation_to_compose_strings, avoid_types_as_parameter_names
+// ignore_for_file: camel_case_types, use_key_in_widget_constructors, annotate_overrides, unused_element, avoid_unnecessary_containers,  deprecated_member_use
+// Do not use this page for now as we are using newHomePage.dart for now to achieve the TGTG
 import 'dart:convert';
 import 'dart:io';
 
@@ -9,12 +11,14 @@ import 'package:foodrescue_app/controllers/Hotel_details_Controller.dart';
 import 'package:foodrescue_app/controllers/Membership_controller.dart';
 import 'package:foodrescue_app/controllers/Near_By_controller.dart';
 import 'package:foodrescue_app/controllers/PaymentGetwey_controller.dart';
-import 'package:foodrescue_app/controllers/Plan_purchase_Controller.dart';
+// Plan functionality removed as requested
 import 'package:foodrescue_app/views/restaurant/Cuisines.dart';
 import 'package:foodrescue_app/views/restaurant/Hotel_Details.dart';
 import 'package:foodrescue_app/views/restaurant/Nearby_hotel.dart';
 import 'package:foodrescue_app/views/notification/Notification.dart';
 import 'package:foodrescue_app/views/bags/View_details.dart';
+import 'package:foodrescue_app/views/bags/SurpriseBagDetails.dart';
+import 'package:foodrescue_app/views/browse/LocationRadiusPage.dart';
 import 'package:foodrescue_app/views/onboarding/IntroScreen.dart';
 import 'package:foodrescue_app/views/auth/Login_In.dart';
 import 'package:foodrescue_app/views/Profile/Profile.dart';
@@ -26,6 +30,7 @@ import 'package:foodrescue_app/Utils/image.dart';
 import 'package:foodrescue_app/utils/api_wrapper.dart';
 import 'package:foodrescue_app/api/Data_save.dart';
 import 'package:foodrescue_app/config/app_config.dart';
+
 import 'package:foodrescue_app/views/Payment/FlutterWave.dart';
 import 'package:foodrescue_app/views/Payment/InputFormater.dart';
 import 'package:foodrescue_app/views/Payment/PaymentCard.dart';
@@ -48,12 +53,11 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
-import '../views/Payment/web_view.dart';
-import '../Utils/dark_light_mode.dart';
-import '../views/Payment/PayStack.dart';
+import '../Payment/web_view.dart';
+import '../../Utils/dark_light_mode.dart';
+import '../Payment/PayStack.dart';
 
 String? uID;
 // bool tablebookscreen = false;
@@ -64,32 +68,74 @@ class HomePage extends StatefulWidget {
   @override
   State<HomePage> createState() => _HomePageState();
 }
+
 var lat;
 var long;
-var address;
+
 class _HomePageState extends State<HomePage> {
+  // Homepage? homepage;
 
   @override
   void initState() {
-    getDarkMode();
     super.initState();
     setState(() {
-      hData.homeDataApi();
-      hData.selectplan();
       payment.paymentgateway();
-      lat == null ? getUserLocation() : getUserLocation1();
+      // Controller will load ALL restaurants automatically without location requirements
+      print("HomePage initState completed - controller will load ALL restaurants");
     });
-
+    // Initialize filtered lists
+    _initializeFilteredLists();
+    // plugin.initialize(publicKey: AppUrl.publicKeyTest);
     _razorpay = Razorpay();
     _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
     _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
     _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
   }
 
+  void _initializeFilteredLists() {
+    // Initialize with all data
+    filteredRestaurants = List.from(hData.allrest);
+    filteredSurpriseBags = List.from(hData.surpriseBags);
+  }
+
+  void _filterByCategory() {
+    if (selectedCategory == "all") {
+      filteredRestaurants = List.from(hData.allrest);
+      filteredSurpriseBags = List.from(hData.surpriseBags);
+    } else {
+      // Filter restaurants by cuisine
+      filteredRestaurants = hData.allrest.where((restaurant) {
+        if (restaurant["cuisines"] != null) {
+          List<String> cuisines = restaurant["cuisines"].toString().split(',');
+          return cuisines.any((cuisine) =>
+            cuisine.trim().toLowerCase().contains(selectedCategory.toLowerCase())
+          );
+        }
+        return false;
+      }).cast<Map<String, dynamic>>().toList();
+
+      // Filter surprise bags by restaurant cuisine
+      filteredSurpriseBags = hData.surpriseBags.where((bag) {
+        final restaurant = hData.allrest.firstWhere(
+          (r) => r["id"] == bag["restaurantId"],
+          orElse: () => {},
+        );
+
+        if (restaurant.isNotEmpty && restaurant["cuisines"] != null) {
+          List<String> cuisines = restaurant["cuisines"].toString().split(',');
+          return cuisines.any((cuisine) =>
+            cuisine.trim().toLowerCase().contains(selectedCategory.toLowerCase())
+          );
+        }
+        return false;
+      }).cast<Map<String, dynamic>>().toList();
+    }
+    setState(() {});
+  }
+
   void _handlePaymentSuccess(PaymentSuccessResponse response) {
-    // bookNowOrder(response.paymentId);
-    planpurchase.planpurchase(
-        planid: planid, pname: paymenttital, transactionid: response.paymentId);
+    // Plan functionality removed as requested
+    print("Payment success but plan functionality disabled: ${response.paymentId}");
   }
 
   void _handlePaymentError(PaymentFailureResponse response) {
@@ -119,219 +165,278 @@ class _HomePageState extends State<HomePage> {
   }
 
   String? SelectedIndex;
-  String? plan1;
-  String? plan2;
   int currentindex = 0;
-  bool isLoading = false;
   bool selected = true;
-  bool defultplan = false;
-  PaystackController paystackCont = Get.put(PaystackController());
-  var first;
+  // Plan-related variables removed as requested
 
+  // Category filtering variables
+  String selectedCategory = "all";
+  List<Map<String, dynamic>> filteredRestaurants = [];
+  List<Map<String, dynamic>> filteredSurpriseBags = [];
+
+  var first;
+  var address;
   String selectidPay = "0";
   String razorpaykey = "";
   String? paymenttital;
   int? _groupValue;
-  String? planid;
+  // Plan-related variables (disabled but kept for compatibility)
+  String? planid = "";
   String planprice = "0";
+  String? plan1 = "";
+  String? plan2 = "";
+  bool defultplan = false;
   final _paymentCard = PaymentCardCreated();
   var currency;
-  int price = 0;
   var _autoValidateMode = AutovalidateMode.disabled;
   int currentTotalprice = 0;
   final _formKey = GlobalKey<FormState>();
   final _card = PaymentCardCreated();
   var numberController = TextEditingController();
   late Razorpay _razorpay;
-  String payerID = "";
 
+  // final plugin = PaystackPlugin();
+  PaystackController paystackCont = Get.put(PaystackController());
   HomeController hData = Get.find<HomeController>();
-  PlanpurchaseController planpurchase = Get.put(PlanpurchaseController());
+
+  // Plan functionality disabled - dummy object for compatibility
+  var planpurchase = _DummyPlanPurchase();
   PaymentgatewayController payment = Get.put(PaymentgatewayController());
+
   // MembershipController membership = Get.put(MembershipController());
+  String? accessToken = "";
+  String payerID = "";
+  String totelbill = "0";
 
   Future getUserLocation() async {
+    print("getUserLocation() called");
     setState(() {});
     LocationPermission permission;
     permission = await Geolocator.checkPermission();
+    print("Location permission check: $permission");
     permission = await Geolocator.requestPermission();
-    if (permission == LocationPermission.denied) {}
-    var currentLocation = await locateUser();
-    debugPrint('location: ${currentLocation.latitude}');
-    lat = currentLocation.latitude;
-    long = currentLocation.longitude;
-    List<Placemark> addresses = await placemarkFromCoordinates(
-        currentLocation.latitude, currentLocation.longitude);
-    await placemarkFromCoordinates(
-        currentLocation.latitude, currentLocation.longitude)
-        .then((List<Placemark> placemarks) {
-      Placemark place = placemarks[0];
-      setState(() {
-        // address = '${place.street}, ${place.subLocality}, ${place.subAdministrativeArea} ${place.postalCode}';
+    print("Location permission request: $permission");
+    if (permission == LocationPermission.denied) {
+      print("Location permission denied!");
+    }
+    try {
+      var currentLocation = await locateUser();
+      debugPrint('location: ${currentLocation.latitude}');
+      lat = currentLocation.latitude;
+      long = currentLocation.longitude;
+      print("Location retrieved successfully: $lat, $long");
+
+      List<Placemark> addresses = await placemarkFromCoordinates(
+          currentLocation.latitude, currentLocation.longitude);
+      print("Addresses retrieved: ${addresses.length}");
+
+      await placemarkFromCoordinates(
+          currentLocation.latitude, currentLocation.longitude)
+          .then((List<Placemark> placemarks) {
+        Placemark place = placemarks[0];
+        setState(() {
+          address = '${place.street}, ${place.subLocality}, ${place.subAdministrativeArea}, ${place.postalCode}';
+        });
+        print("Address set: $address");
+      }).catchError((e) {
+        debugPrint("Error in address resolution: $e");
       });
-    }).catchError((e) {
-      debugPrint(e);
-    });
-    // first = addresses.first.name;
-    // address  = '${placeMarks.first.name!.isNotEmpty ? '${placeMarks.first.name!}, ' : ''}${placeMarks.first.thoroughfare!.isNotEmpty ? '${placeMarks.first.thoroughfare!}, ' : ''}${placeMarks.first.subLocality!.isNotEmpty ? '${placeMarks.first.subLocality!}, ' : ''}${placeMarks.first.locality!.isNotEmpty ? '${placeMarks.first.locality!}, ' : ''}${placeMarks.first.subAdministrativeArea!.isNotEmpty ? '${placeMarks.first.subAdministrativeArea!}, ' : ''}${placeMarks.first.postalCode!.isNotEmpty ? '${placeMarks.first.postalCode!}, ' : ''}${placeMarks.first.administrativeArea!.isNotEmpty ? placeMarks.first.administrativeArea : ''}';
+
+      first = addresses.first.name;
+      print("FIRST ${address}");
+      // address ='${address.street}, ${address.subLocality}, ${address.subAdministrativeArea}, ${address.postalCode}';
+
+      // Controller handles data loading automatically
+      setState(() {});
+      print("getUserLocation() completed");
+    } catch (e) {
+      print("Error in getUserLocation(): $e");
+      // Controller handles data loading automatically
+    }
   }
 
-
   Future getUserLocation1() async {
+    print("getUserLocation1() called");
     setState(() {});
     LocationPermission permission;
     permission = await Geolocator.checkPermission();
+    print("Location permission check: $permission");
     permission = await Geolocator.requestPermission();
-    if (permission == LocationPermission.denied) {}
-    var currentLocation = await locateUser();
-    debugPrint('location: ${currentLocation.latitude}');
+    print("Location permission request: $permission");
+    if (permission == LocationPermission.denied) {
+      print("Location permission denied!");
+    }
+    try {
+      var currentLocation = await locateUser();
+      debugPrint('location: ${currentLocation.latitude}');
+      lat = currentLocation.latitude;
+      long = currentLocation.longitude;
+      print("Location retrieved successfully: $lat, $long");
+
+      // Controller handles data loading automatically
+      setState(() {});
+      print("getUserLocation1() completed");
+    } catch (e) {
+      print("Error in getUserLocation1(): $e");
+      // Controller handles data loading automatically
+    }
   }
 
   Future<Position> locateUser() async {
     return Geolocator.getCurrentPosition(
+
         desiredAccuracy: LocationAccuracy.high);
   }
-
   late ColorNotifier notifier;
-
-  getDarkMode() async {
-    final prefs = await SharedPreferences.getInstance();
-    bool? previousState = prefs.getBool("setIsDark");
-    if (previousState == null) {
-      notifier.setIsDark = false;
-    } else {
-      notifier.setIsDark = previousState;
-    }
-  }
-
-  webViewPaymentMethod(
-      {required String initialUrl,
-        required String status1,
-        required String status2}) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => PaymentWebVIew(
-          initialUrl: initialUrl,
-          navigationDelegate: (request) async {
-            final uri = Uri.parse(request.url);
-
-            debugPrint("************ URL:--- $initialUrl");
-            debugPrint("************ Navigating to URL: ${request.url}");
-            debugPrint("************ Parsed URI: $uri");
-            debugPrint("************ 2435243254: ${uri.queryParameters[status1]}");
-
-            // Check the status parameter instead of Result
-            final status = uri.queryParameters[status1];
-            debugPrint(" /*/*/*/*/*/*/*/*/*/*/*/*/*/ Status ---- $status");
-            if (status == null) {
-              debugPrint("No status parameter found.");
-            } else {
-              debugPrint("Status parameter: $status");
-              if (status == status2) {
-                debugPrint("Purchase successful.");
-                Get.back();
-                Get.back();
-                planpurchase.planpurchase(
-                    planid: planid,
-                    pname: paymenttital,
-                    transactionid: "transactionid");
-
-                return NavigationDecision.prevent;
-              } else {
-                debugPrint("Purchase failed with status: $status.");
-                Navigator.pop(context);
-                // ignore: unnecessary_string_interpolations
-                tost("$status");
-                return NavigationDecision.prevent;
-              }
-            }
-            return NavigationDecision.navigate;
-          },
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     notifier = Provider.of<ColorNotifier>(context, listen: true);
     Future.delayed(Duration(seconds: 0), () {
       setState(() {});
     });
+
     return WillPopScope(
       onWillPop: () {
         exit(0);
       },
       child: Scaffold(
-        bottomNavigationBar: GetBuilder<HomeController>(builder: (context) {
-          return hData.homeDataList["is_subscribe"] == 0
-              ? bottombar(
-              Hedingtext: "special prices only for you".tr.toUpperCase(),
-              bgcolor: transparent,
-              buttontext1: "select a plan".tr.toUpperCase(),
-              onTap: bottomsheet)
-              : SizedBox();
-        }),
+        // Plan section removed as requested
+        // bottomNavigationBar: GetBuilder<HomeController>(builder: (context) {
+        //   return hData.homeDataList["is_subscribe"] == 0
+        //       ? bottombar(
+        //       Hedingtext: "special prices only for you".tr.toUpperCase(),
+        //       bgcolor: transparent,
+        //       buttontext1: "select a plan".tr.toUpperCase(),
+        //       onTap: bottomsheet)
+        //       : SizedBox();
+        // }),
         backgroundColor: notifier.background,
         appBar: AppBar(
-            leadingWidth: 35,
             elevation: 0,
             backgroundColor: notifier.background,
-            centerTitle: true,
-            actions: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: InkWell(
-                    onTap: () {
-                      Get.to(() => Notificationpage());
-                    },
-                    child: Image.asset("assets/onesignal.png",
-                        height: 10, color: orangeColor)),
-              )
-            ],
-            leading: Padding(
-              padding: const EdgeInsets.only(left: 14),
-              child: Image.asset("assets/livelocation.png", height: 15),),
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            toolbarHeight: 80,
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Text(
+                  "Good evening!",
+                  style: TextStyle(
+                    color: notifier.textColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                SizedBox(height: 4),
+                GestureDetector(
+                  onTap: () {
+                    Get.to(() => LocationRadiusPage());
+                  },
+                  child: Row(
+                    children: [
+                      Obx(() => hData.isGettingLocation.value
+                        ? SizedBox(
+                            width: 12,
+                            height: 12,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(orangeColor),
+                            ),
+                          )
+                        : Icon(
+                            Icons.location_on,
+                            size: 16,
+                            color: orangeColor,
+                          ),
+                      ),
+                      SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          hData.currentAddress.value.isNotEmpty
+                            ? hData.currentAddress.value
+                            : "Getting location...",
+                          style: TextStyle(
+                            color: notifier.textColor.withOpacity(0.7),
+                            fontSize: 14,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Icon(
+                        Icons.keyboard_arrow_down,
+                        size: 16,
+                        color: notifier.textColor.withOpacity(0.7),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              IconButton(
+                onPressed: () {
+                  Get.to(() => Notificationpage());
+                },
+                icon: Stack(
                   children: [
-                    SizedBox(
-                      width: Get.width * 0.64,
-                      child: Text(
-                        "${address ?? ""}",
-                        style: TextStyle(
-                            fontFamily: "Gilroy Bold",
-                            color: notifier.textColor,
-                            fontSize: 16),
-                        overflow: TextOverflow.ellipsis,
+                    Icon(
+                      Icons.notifications_outlined,
+                      color: notifier.textColor,
+                      size: 24,
+                    ),
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: orangeColor,
+                          shape: BoxShape.circle,
+                        ),
                       ),
                     ),
                   ],
-                )
-              ],
-            )),
+                ),
+              ),
+              SizedBox(width: 8),
+            ],
+            ),
         body: RefreshIndicator(
           onRefresh: () {
             return Future.delayed(
-              Duration(seconds: 2),
-                  () {
+              Duration(seconds: 2), () {
+                // Refresh ALL restaurants data
                 hData.homeDataApi();
               },
             );
           },
           child: SingleChildScrollView(
-              child: GetBuilder<HomeController>(builder: (context) {
+              child: GetBuilder<HomeController>(builder: (hData) {
                 return Padding(
                     padding: EdgeInsets.symmetric(horizontal: 12),
-                    child: hData.isLoading.value
-                        ? Column(
+                    child: hData.isLoading.value == true
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                CircularProgressIndicator(color: orangeColor),
+                                SizedBox(height: 16),
+                                Text(
+                                  "Loading restaurants...".tr,
+                                  style: TextStyle(
+                                    color: notifier.textColor,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         SizedBox(height: Get.height * 0.02),
+
                         Container(
                           height: Get.height * 0.4,
                           width: double.infinity,
@@ -349,17 +454,28 @@ class _HomePageState extends State<HomePage> {
                                 margin: EdgeInsets.only(left: 6, right: 6),
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(15),
-                                  child: FadeInImage.assetNetwork(
+                                  child: hData.sliderimage.isEmpty
+                                      ? Center(
+                                      child: CircularProgressIndicator(
+                                          color: Colors.white))
+                                      : FadeInImage.assetNetwork(
                                     fadeInCurve: Curves.easeInCirc,
                                     placeholder:
                                     "assets/ezgif.com-crop.gif",
                                     height: Get.height * 0.4,
                                     width: Get.width * 0.7,
+                                    imageErrorBuilder:
+                                        (context, error, stackTrace) {
+                                      return Image.asset(
+                                          "assets/ezgif.com-crop.gif");
+                                    },
                                     placeholderCacheHeight: 320,
                                     placeholderCacheWidth: 240,
                                     placeholderFit: BoxFit.fill,
                                     // placeholderScale: 1.0,
                                     image: hData.sliderimage[index]["image"] ?? "https://picsum.photos/400/200",
+
+                                    // "${AppUrl.imageurl} + ${home_controller.homeDatakmodal?.homeData.bannerlist}",
                                     fit: BoxFit.cover,
                                   ),
                                 ),
@@ -367,6 +483,8 @@ class _HomePageState extends State<HomePage> {
                             },
                           ),
                         ),
+                        // print(''),
+                        // "${Confing.imageurl}${homeController.newordermodelnew!.orderData![index].catImg}",
                         SizedBox(height: Get.height * 0.02),
                         Membership
                             ? Column(
@@ -409,7 +527,7 @@ class _HomePageState extends State<HomePage> {
                                             fontSize: 14),
                                       ),
                                       Icon(Icons.keyboard_arrow_right,
-                                          size: 20, color: notifier.textColor)
+                                          size: 20,  color: notifier.textColor,)
                                     ]),
                               ),
                             ),
@@ -458,18 +576,15 @@ class _HomePageState extends State<HomePage> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Image.asset(image.petals,
-                                height: 20, color: notifier.background),
+                                height: 20, color: BlackColor),
                             SizedBox(width: Get.width * 0.02),
-                            SizedBox(
-                              width: Get.width * 0.58,
-                              child: Text(
-                                provider.membershipBe.tr.toUpperCase(),
-                                style: TextStyle(
-                                    fontFamily: "Gilroy Medium",
-                                    color: greycolor,
-                                    letterSpacing: 4,
-                                    fontSize: 12),
-                              ),
+                            Text(
+                              provider.membershipBe.tr.toUpperCase(),
+                              style: TextStyle(
+                                  fontFamily: "Gilroy Medium",
+                                  color: greycolor,
+                                  letterSpacing: 4,
+                                  fontSize: 12),
                             ),
                             Image.asset(image.petals,
                                 height: 20, color: notifier.background),
@@ -508,10 +623,9 @@ class _HomePageState extends State<HomePage> {
                                           Text(
                                             provider.attop.tr,
                                             style: TextStyle(
-                                              fontFamily: "Gilroy Medium",
-                                              color: greycolor,
-                                              fontSize: 14,
-                                            ),
+                                                fontFamily: "Gilroy Medium",
+                                                color: greycolor,
+                                                fontSize: 14),
                                           ),
                                         ],
                                       ),
@@ -544,7 +658,8 @@ class _HomePageState extends State<HomePage> {
                                                 SizedBox(
                                                     width: Get.width * 0.04),
                                                 Text(
-                                                  provider.explore.tr.toUpperCase(),
+                                                  provider.explore.tr
+                                                      .toUpperCase(),
                                                   style: TextStyle(
                                                       color: orangeColor,
                                                       fontFamily:
@@ -555,7 +670,7 @@ class _HomePageState extends State<HomePage> {
                                             ),
                                             CircleAvatar(
                                               radius: 15,
-                                              backgroundColor: notifier.background,
+                                              backgroundColor: BlackColor,
                                               backgroundImage:
                                               AssetImage(image.deniout),
                                             )
@@ -588,7 +703,8 @@ class _HomePageState extends State<HomePage> {
                                                 SizedBox(
                                                     width: Get.width * 0.04),
                                                 Text(
-                                                  "book a table".tr.toUpperCase(),
+                                                  "book a table".tr
+                                                      .toUpperCase(),
                                                   style: TextStyle(
                                                       color: yelloColor,
                                                       fontFamily:
@@ -613,11 +729,10 @@ class _HomePageState extends State<HomePage> {
                             Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    provider.trending.tr,
+                                  Text(provider.trending.tr,
                                     style: TextStyle(
                                         fontFamily: "Gilroy Bold",
-                                        color: notifier.textColor,
+                                        color: WhiteColor,
                                         fontSize: 16),
                                   ),
                                   SizedBox(height: Get.height * 0.03),
@@ -630,7 +745,7 @@ class _HomePageState extends State<HomePage> {
                                             scrollDirection: Axis.horizontal,
                                             shrinkWrap: true,
                                             padding: EdgeInsets.zero,
-                                            itemCount: hData.latestrest.length,
+                                            itemCount: filteredRestaurants.length,
                                             itemBuilder: (BuildContext context,
                                                 int index) {
                                               return InkWell(
@@ -638,10 +753,12 @@ class _HomePageState extends State<HomePage> {
                                                   setState(() {
                                                     currentindex = index;
                                                   });
-                                                  Get.to(() => HotelDetails(
-                                                      detailId:
-                                                      hData.latestrest[index]
-                                                      ["id"]));
+                                                  String? restaurantId = filteredRestaurants[index]["id"]?.toString();
+                                                  if (restaurantId != null && restaurantId.isNotEmpty) {
+                                                    Get.to(() => HotelDetails(detailId: restaurantId));
+                                                  } else {
+                                                    Get.snackbar("Error", "Restaurant ID not found");
+                                                  }
                                                 },
                                                 child: Container(
                                                   decoration: BoxDecoration(
@@ -684,7 +801,7 @@ class _HomePageState extends State<HomePage> {
                                                               placeholderFit:
                                                               BoxFit.fill,
                                                               // placeholderScale: 1.0,
-                                                              image: hData.latestrest[index]["image"] ?? "https://picsum.photos/300/200",
+                                                              image: filteredRestaurants[index]["image"]?.toString() ?? "https://picsum.photos/300/200",
                                                               fit: BoxFit.cover,
                                                             ),
                                                             Positioned(
@@ -739,17 +856,17 @@ class _HomePageState extends State<HomePage> {
                                                                                   dateFormat ==
                                                                                       "Sunday") {
                                                                                 currentdiscount =
-                                                                                hData.latestrest[index]["frisun"];
+                                                                                filteredRestaurants[index]["fridaySundayOffer"]?.toString() ?? "0";
                                                                               } else {
                                                                                 currentdiscount =
-                                                                                hData.latestrest[index]["monthru"];
+                                                                                filteredRestaurants[index]["mondayThursdayOffer"]?.toString() ?? "0";
                                                                               }
 
                                                                               return Text(
                                                                                 "${currentdiscount}% OFF",
                                                                                 style: TextStyle(
                                                                                     fontFamily: "Gilroy Bold",
-                                                                                    color: notifier.textColor,
+                                                                                    color:  notifier.textColor,
                                                                                     fontSize: 20),
                                                                               );
                                                                             }),
@@ -757,7 +874,8 @@ class _HomePageState extends State<HomePage> {
                                                                             height:
                                                                             Get.height * 0.01),
                                                                         Text(
-                                                                          "Today's Discount".tr.toUpperCase(),
+                                                                          "Today's Discount".tr
+                                                                              .toUpperCase(),
                                                                           style: TextStyle(
                                                                               fontFamily:
                                                                               "Gilroy Medium",
@@ -777,10 +895,9 @@ class _HomePageState extends State<HomePage> {
                                                           height:
                                                           Get.height * 0.02),
                                                       Text(
-                                                        hData.latestrest[index]
-                                                        ["title"],
+                                                        filteredRestaurants[index]["title"]?.toString() ?? "Restaurant",
                                                         style: TextStyle(
-                                                            color: notifier.textColor,
+                                                            color:  notifier.textColor,
                                                             fontFamily:
                                                             "Gilroy Bold",
                                                             fontSize: 18),
@@ -793,8 +910,7 @@ class _HomePageState extends State<HomePage> {
                                                               color: yelloColor,
                                                               size: 22),
                                                           Text(
-                                                            hData.latestrest[
-                                                            index]["rate"],
+                                                            filteredRestaurants[index]["rating"]?.toString() ?? "0.0",
                                                             style: TextStyle(
                                                                 color: greycolor,
                                                                 fontFamily:
@@ -812,9 +928,7 @@ class _HomePageState extends State<HomePage> {
                                                               width: Get.width *
                                                                   0.02),
                                                           Text(
-                                                            hData.latestrest[
-                                                            index]
-                                                            ["landmark"],
+                                                            filteredRestaurants[index]["fullAddress"]?.toString() ?? "No address",
                                                             style: TextStyle(
                                                                 color: greycolor,
                                                                 fontFamily:
@@ -826,8 +940,7 @@ class _HomePageState extends State<HomePage> {
                                                       SizedBox(
                                                         width: Get.width * 0.45,
                                                         child: Text(
-                                                            hData.latestrest[
-                                                            index]["shortDescription"],
+                                                            filteredRestaurants[index]["shortDescription"]?.toString() ?? "No description",
                                                             style: TextStyle(
                                                                 color: greycolor,
                                                                 fontFamily:
@@ -842,11 +955,324 @@ class _HomePageState extends State<HomePage> {
                                           ),
                                         );
                                       }),
+
+                                  // Surprise Bags Section - TGTG Style
+                                  SizedBox(height: Get.height * 0.04),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        "Surprise Bags Near You".tr,
+                                        style: TextStyle(
+                                            color: notifier.textColor,
+                                            fontFamily: "Gilroy Bold",
+                                            fontSize: 20),
+                                      ),
+                                      TextButton(
+                                        onPressed: () {
+                                          // Navigate to all bags
+                                        },
+                                        child: Text(
+                                          "See all",
+                                          style: TextStyle(
+                                            color: orangeColor,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: Get.height * 0.02),
+                                  GetBuilder<HomeController>(
+                                      builder: (context) {
+                                        return hData.surpriseBags.isEmpty
+                                            ? Container(
+                                                height: Get.height * 0.25,
+                                                decoration: BoxDecoration(
+                                                  color: notifier.containerColor,
+                                                  borderRadius: BorderRadius.circular(16),
+                                                  border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                                                ),
+                                                child: Center(
+                                                  child: Column(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    children: [
+                                                      Icon(
+                                                        Icons.shopping_bag_outlined,
+                                                        size: 48,
+                                                        color: Colors.grey,
+                                                      ),
+                                                      SizedBox(height: 16),
+                                                      Text(
+                                                        "No surprise bags available".tr,
+                                                        style: TextStyle(
+                                                          color: notifier.textColor,
+                                                          fontSize: 16,
+                                                          fontWeight: FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                      SizedBox(height: 8),
+                                                      Text(
+                                                        "Check back later for new bags!".tr,
+                                                        style: TextStyle(
+                                                          color: Colors.grey,
+                                                          fontSize: 14,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              )
+                                            : SizedBox(
+                                                height: Get.height * 0.42,
+                                                width: double.infinity,
+                                                child: ListView.builder(
+                                                  scrollDirection: Axis.horizontal,
+                                                  shrinkWrap: true,
+                                                  padding: EdgeInsets.only(right: 16),
+                                                  itemCount: hData.surpriseBags.length,
+                                                  itemBuilder: (BuildContext context, int index) {
+                                                    var bag = hData.surpriseBags[index];
+                                                    // Find the restaurant for this bag
+                                                    var restaurant = hData.allrest.firstWhere(
+                                                      (r) => r["id"] == bag["restaurantId"],
+                                                      orElse: () => {
+                                                        "title": "Unknown Restaurant",
+                                                        "image": "",
+                                                        "address": "Address not available",
+                                                      },
+                                                    );
+
+                                                    return InkWell(
+                                                      onTap: () {
+                                                        Get.to(() => SurpriseBagDetails(
+                                                          bagData: bag,
+                                                          restaurantName: restaurant["title"] ?? "Unknown Restaurant",
+                                                          restaurantImage: restaurant["image"] ?? "",
+                                                          restaurantAddress: restaurant["address"] ?? "Address not available",
+                                                        ));
+                                                      },
+                                                      child: Container(
+                                                        margin: EdgeInsets.only(right: 16),
+                                                        width: Get.width * 0.72,
+                                                        decoration: BoxDecoration(
+                                                          borderRadius: BorderRadius.circular(16),
+                                                          color: notifier.containerColor,
+                                                          boxShadow: [
+                                                            BoxShadow(
+                                                              color: Colors.black.withOpacity(0.08),
+                                                              blurRadius: 12,
+                                                              offset: Offset(0, 4),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                        child: Column(
+                                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                                          children: [
+                                                            // Image with overlay
+                                                            Container(
+                                                              height: Get.height * 0.22,
+                                                              width: double.infinity,
+                                                              child: Stack(
+                                                                children: [
+                                                                  ClipRRect(
+                                                                    borderRadius: BorderRadius.only(
+                                                                      topLeft: Radius.circular(16),
+                                                                      topRight: Radius.circular(16),
+                                                                    ),
+                                                                    child: Image.network(
+                                                                      bag["image"] ?? restaurant["image"] ?? "https://picsum.photos/300/200",
+                                                                      fit: BoxFit.cover,
+                                                                      width: double.infinity,
+                                                                      height: double.infinity,
+                                                                      errorBuilder: (context, error, stackTrace) {
+                                                                        return Container(
+                                                                          color: Colors.grey[300],
+                                                                          child: Icon(Icons.restaurant, size: 50, color: Colors.grey),
+                                                                        );
+                                                                      },
+                                                                    ),
+                                                                  ),
+                                                                  // Availability badge
+                                                                  Positioned(
+                                                                    top: 12,
+                                                                    right: 12,
+                                                                    child: Container(
+                                                                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                                      decoration: BoxDecoration(
+                                                                        color: _getBagAvailabilityColor(bag),
+                                                                        borderRadius: BorderRadius.circular(12),
+                                                                      ),
+                                                                      child: Text(
+                                                                        "${bag["quantity"] ?? 1} left",
+                                                                        style: TextStyle(
+                                                                          color: Colors.white,
+                                                                          fontSize: 11,
+                                                                          fontWeight: FontWeight.bold,
+                                                                        ),
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                  // Pickup time badge
+                                                                  Positioned(
+                                                                    bottom: 12,
+                                                                    left: 12,
+                                                                    child: Container(
+                                                                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                                      decoration: BoxDecoration(
+                                                                        color: Colors.black.withOpacity(0.7),
+                                                                        borderRadius: BorderRadius.circular(8),
+                                                                      ),
+                                                                      child: Row(
+                                                                        mainAxisSize: MainAxisSize.min,
+                                                                        children: [
+                                                                          Icon(Icons.access_time, size: 12, color: Colors.white),
+                                                                          SizedBox(width: 4),
+                                                                          Text(
+                                                                            "${bag["pickupStartTime"] ?? "18:00"}-${bag["pickupEndTime"] ?? "20:00"}",
+                                                                            style: TextStyle(
+                                                                              color: Colors.white,
+                                                                              fontSize: 11,
+                                                                              fontWeight: FontWeight.w500,
+                                                                            ),
+                                                                          ),
+                                                                        ],
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            ),
+                                                            // Content section
+                                                            Expanded(
+                                                              child: Padding(
+                                                                padding: EdgeInsets.all(16),
+                                                                child: Column(
+                                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                                  children: [
+                                                                    // Restaurant name
+                                                                    Text(
+                                                                      restaurant["title"] ?? "Unknown Restaurant",
+                                                                      style: TextStyle(
+                                                                        fontFamily: "Gilroy Bold",
+                                                                        color: notifier.textColor,
+                                                                        fontSize: 16,
+                                                                      ),
+                                                                      maxLines: 1,
+                                                                      overflow: TextOverflow.ellipsis,
+                                                                    ),
+                                                                    SizedBox(height: 4),
+                                                                    // Distance and rating
+                                                                    Row(
+                                                                      children: [
+                                                                        Icon(Icons.location_on, size: 14, color: Colors.grey),
+                                                                        SizedBox(width: 4),
+                                                                        Text(
+                                                                          "0.5 km",
+                                                                          style: TextStyle(
+                                                                            color: Colors.grey,
+                                                                            fontSize: 12,
+                                                                          ),
+                                                                        ),
+                                                                        SizedBox(width: 12),
+                                                                        Icon(Icons.star, size: 14, color: Colors.amber),
+                                                                        SizedBox(width: 4),
+                                                                        Text(
+                                                                          "4.5",
+                                                                          style: TextStyle(
+                                                                            color: Colors.grey,
+                                                                            fontSize: 12,
+                                                                          ),
+                                                                        ),
+                                                                      ],
+                                                                    ),
+                                                                    SizedBox(height: 12),
+                                                                    // Bag title
+                                                                    Text(
+                                                                      bag["title"] ?? "Surprise Bag",
+                                                                      style: TextStyle(
+                                                                        color: notifier.textColor.withOpacity(0.8),
+                                                                        fontSize: 14,
+                                                                      ),
+                                                                      maxLines: 1,
+                                                                      overflow: TextOverflow.ellipsis,
+                                                                    ),
+                                                                    Spacer(),
+                                                                    // Price section
+                                                                    Row(
+                                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                                      children: [
+                                                                        Column(
+                                                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                                                          children: [
+                                                                            Row(
+                                                                              children: [
+                                                                                Text(
+                                                                                  "\$${bag["discountedPrice"] ?? "9.99"}",
+                                                                                  style: TextStyle(
+                                                                                    fontFamily: "Gilroy Bold",
+                                                                                    color: orangeColor,
+                                                                                    fontSize: 18,
+                                                                                  ),
+                                                                                ),
+                                                                                SizedBox(width: 8),
+                                                                                Text(
+                                                                                  "\$${bag["originalPrice"] ?? "29.99"}",
+                                                                                  style: TextStyle(
+                                                                                    color: Colors.grey,
+                                                                                    fontSize: 14,
+                                                                                    decoration: TextDecoration.lineThrough,
+                                                                                  ),
+                                                                                ),
+                                                                              ],
+                                                                            ),
+                                                                            SizedBox(height: 2),
+                                                                            Text(
+                                                                              "Save 67%",
+                                                                              style: TextStyle(
+                                                                                color: Colors.green,
+                                                                                fontSize: 12,
+                                                                                fontWeight: FontWeight.w600,
+                                                                              ),
+                                                                            ),
+                                                                          ],
+                                                                        ),
+                                                                        // Reserve button
+                                                                        Container(
+                                                                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                                          decoration: BoxDecoration(
+                                                                            color: orangeColor,
+                                                                            borderRadius: BorderRadius.circular(20),
+                                                                          ),
+                                                                          child: Text(
+                                                                            "Reserve",
+                                                                            style: TextStyle(
+                                                                              color: Colors.white,
+                                                                              fontSize: 12,
+                                                                              fontWeight: FontWeight.bold,
+                                                                            ),
+                                                                          ),
+                                                                        ),
+                                                                      ],
+                                                                    ),
+                                                                  ],
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ));
+                                                  },
+                                                ),
+                                              );
+                                      }),
+
                                   // SizedBox(height: Get.height * 0.04),
                                   Text(
                                     "Explore cuisines".tr,
                                     style: TextStyle(
-                                        color: notifier.textColor,
+                                        color:  notifier.textColor,
                                         fontFamily: "Gilroy Bold",
                                         fontSize: 16),
                                   ),
@@ -860,29 +1286,54 @@ class _HomePageState extends State<HomePage> {
                                             scrollDirection: Axis.horizontal,
                                             shrinkWrap: true,
                                             padding: EdgeInsets.zero,
-                                            itemCount: hData.CuisineList.length,
+                                            itemCount: hData.CuisineList.length + 1, // +1 for "All" category
                                             itemBuilder: (BuildContext context,
                                                 int index) {
+                                              String cuisineId;
+                                              String cuisineTitle;
+                                              String imageUrl;
+
+                                              if (index == 0) {
+                                                // First item is "All" category
+                                                cuisineId = "all";
+                                                cuisineTitle = "All";
+                                                imageUrl = "https://picsum.photos/100/100";
+                                              } else {
+                                                // Regular cuisine categories
+                                                int cuisineIndex = index - 1;
+                                                cuisineId = hData.CuisineList[cuisineIndex]["id"]?.toString() ?? "all";
+                                                cuisineTitle = hData.CuisineList[cuisineIndex]["title"]?.toString() ?? "All";
+                                                imageUrl = hData.CuisineList[cuisineIndex]["image"]?.toString() ?? "https://picsum.photos/100/100";
+                                              }
+
+                                              bool isSelected = selectedCategory == cuisineId;
+
                                               return InkWell(
                                                 onTap: () {
-                                                  Get.to(() => Cuisines(
-                                                    title: hData.CuisineList[
-                                                    index]["title"],
-                                                    hotelid:
-                                                    hData.CuisineList[
-                                                    index]["id"],
-                                                  ));
+                                                  setState(() {
+                                                    selectedCategory = cuisineId;
+                                                  });
+                                                  _filterByCategory();
                                                 },
                                                 child: Container(
                                                   width: Get.width * 0.25,
                                                   child: Column(
                                                     children: [
-                                                      CircleAvatar(
-                                                          backgroundImage:
-                                                          NetworkImage(hData.CuisineList[index]["image"] ?? "https://via.placeholder.com/100x100"),
-                                                          radius: 35,
-                                                          backgroundColor:
-                                                          transparent),
+                                                      Container(
+                                                        decoration: BoxDecoration(
+                                                          shape: BoxShape.circle,
+                                                          border: isSelected ? Border.all(
+                                                            color: orangeColor,
+                                                            width: 3,
+                                                          ) : null,
+                                                        ),
+                                                        child: CircleAvatar(
+                                                            backgroundImage:
+                                                            NetworkImage(imageUrl),
+                                                            radius: 35,
+                                                            backgroundColor:
+                                                            transparent),
+                                                      ),
                                                       SizedBox(
                                                           height:
                                                           Get.height * 0.01),
@@ -890,13 +1341,12 @@ class _HomePageState extends State<HomePage> {
                                                         width: Get.width * 0.23,
                                                         child: Center(
                                                           child: Text(
-                                                            hData.CuisineList[
-                                                            index]["title"],
+                                                            cuisineTitle,
                                                             style: TextStyle(
                                                                 fontSize: 13,
-                                                                color: notifier.textColor,
-                                                                fontFamily:
-                                                                "Gilroy Medium"),
+                                                                color: isSelected ? orangeColor : BlackColor,
+                                                                fontFamily: isSelected ? "Gilroy Bold" : "Gilroy Medium"),
+                                                            textAlign: TextAlign.center,
                                                           ),
                                                         ),
                                                       ),
@@ -913,7 +1363,7 @@ class _HomePageState extends State<HomePage> {
                                     "Related Restaurants".tr,
                                     style: TextStyle(
                                         fontSize: 16,
-                                        color: notifier.textColor,
+                                        color:  notifier.textColor,
                                         fontFamily: "Gilroy Bold"),
                                   ),
                                   SizedBox(height: Get.height * 0.02),
@@ -924,14 +1374,20 @@ class _HomePageState extends State<HomePage> {
                                             height: Get.height * 0.4,
                                             child: hData.isLoading.value
                                                 ? CarouselSlider.builder(
-                                              itemCount: hData.allrest.length,
-                                              itemBuilder:(BuildContext context, int index, int pageViewIndex) {
+                                              itemCount:
+                                              hData.allrest.length,
+                                              itemBuilder:
+                                                  (BuildContext context,
+                                                  int index,
+                                                  int pageViewIndex) {
                                                 return InkWell(
                                                   onTap: () {
-                                                    Get.to(() => HotelDetails(
-                                                        detailId: hData
-                                                            .allrest[
-                                                        index]["id"]));
+                                                    String? restaurantId = hData.allrest[index]["id"]?.toString();
+                                                    if (restaurantId != null && restaurantId.isNotEmpty) {
+                                                      Get.to(() => HotelDetails(detailId: restaurantId));
+                                                    } else {
+                                                      Get.snackbar("Error", "Restaurant ID not found");
+                                                    }
                                                   },
                                                   child: Stack(
                                                     children: [
@@ -942,11 +1398,17 @@ class _HomePageState extends State<HomePage> {
                                                             right: 6),
                                                         // height: Get.height / 6,
 
-                                                        decoration: BoxDecoration(
-                                                          borderRadius: BorderRadius.circular(15),
+                                                        decoration:
+                                                        BoxDecoration(
+                                                          borderRadius:
+                                                          BorderRadius
+                                                              .circular(
+                                                              15),
                                                         ),
                                                         child: ClipRRect(
-                                                          borderRadius: BorderRadius.circular(
+                                                          borderRadius:
+                                                          BorderRadius
+                                                              .circular(
                                                               15),
                                                           child: FadeInImage
                                                               .assetNetwork(
@@ -968,114 +1430,120 @@ class _HomePageState extends State<HomePage> {
                                                             BoxFit.fill,
                                                             // placeholderScale: 1.0,
                                                             image: hData.allrest[index]["image"] ?? "https://picsum.photos/300/200",
-                                                            fit: BoxFit.cover,
+                                                            fit: BoxFit
+                                                                .cover,
                                                           ),
                                                         ),
                                                       ),
                                                       Container(
-                                                        margin:
-                                                        EdgeInsets.only(
-                                                            left: 6,
-                                                            right: 6),
                                                         decoration:
                                                         BoxDecoration(
-                                                          borderRadius: BorderRadius.circular(
-                                                              15),
                                                           gradient: LinearGradient(
-                                                              begin: Alignment.topCenter,
-                                                              end: Alignment.bottomCenter,
-                                                              stops: const [0.6, 0.8, 1],
+                                                              begin: Alignment
+                                                                  .topCenter,
+                                                              end: Alignment
+                                                                  .bottomCenter,
+                                                              stops: const [
+                                                                0.6,
+                                                                0.8,
+                                                                1
+                                                              ],
                                                               colors: [
-                                                                Colors.transparent,
-                                                                Colors.black.withOpacity(0.9),
-                                                                Colors.black.withOpacity(0.8),
+                                                                Colors
+                                                                    .transparent,
+                                                                Colors.black
+                                                                    .withOpacity(
+                                                                    0.9),
+                                                                Colors.black
+                                                                    .withOpacity(
+                                                                    0.8),
                                                               ]),
                                                         ),
                                                       ),
                                                       Positioned(
-                                                        top: -10,
-                                                        right: 45,
-                                                        child: Container(
-                                                          padding:
-                                                          EdgeInsets
-                                                              .all(8),
-                                                          height:
-                                                          Get.height *
-                                                              0.12,
-                                                          width:
-                                                          Get.width *
-                                                              0.48,
-                                                          color: orangeshadow
-                                                              .withOpacity(
-                                                              0.5),
-                                                          child:
-                                                          Container(
+                                                          top: -10,
+                                                          right: 45,
+                                                          child: Container(
+                                                            padding:
+                                                            EdgeInsets
+                                                                .all(8),
                                                             height:
                                                             Get.height *
-                                                                0.08,
+                                                                0.12,
                                                             width:
                                                             Get.width *
-                                                                0.34,
-                                                            decoration: BoxDecoration(
-                                                                border: Border.all(
-                                                                    color:
-                                                                    notifier.textColor)),
-                                                            child: Column(
-                                                              mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .center,
-                                                              children: [
-                                                                GetBuilder<
-                                                                    HomeController>(
-                                                                    builder:
-                                                                        (context) {
-                                                                      String
-                                                                      currentdiscount =
-                                                                          "";
-                                                                      DateTime
-                                                                      date =
-                                                                      DateTime.now();
-                                                                      String
-                                                                      dateFormat =
-                                                                      DateFormat('EEEE').format(date);
-                                                                      if (dateFormat == "Friday" ||
-                                                                          dateFormat ==
-                                                                              "Saturday" ||
-                                                                          dateFormat ==
-                                                                              "Sunday") {
-                                                                        currentdiscount =
-                                                                        hData.allrest[index]["frisun"];
-                                                                      } else {
-                                                                        currentdiscount =
-                                                                        hData.allrest[index]["monthru"];
-                                                                      }
-
-                                                                      return Text(
-                                                                        "${currentdiscount}% OFF",
-                                                                        style: TextStyle(
-                                                                            fontFamily: "Gilroy Bold",
-                                                                            color: notifier.textColor,
-                                                                            fontSize: 20),
-                                                                      );
-                                                                    }),
-                                                                SizedBox(
-                                                                    height:
-                                                                    Get.height * 0.01),
-                                                                Text(
-                                                                  "Today's Discount".tr.toUpperCase(),
-                                                                  style: TextStyle(
-                                                                      fontFamily:
-                                                                      "Gilroy Medium",
+                                                                0.48,
+                                                            color: orangeshadow
+                                                                .withOpacity(
+                                                                0.5),
+                                                            child:
+                                                            Container(
+                                                              height:
+                                                              Get.height *
+                                                                  0.08,
+                                                              width:
+                                                              Get.width *
+                                                                  0.34,
+                                                              decoration: BoxDecoration(
+                                                                  border: Border.all(
                                                                       color:
-                                                                      notifier.textColor,
-                                                                      fontSize:
-                                                                      12),
-                                                                )
-                                                              ],
+                                                                      WhiteColor)),
+                                                              child: Column(
+                                                                mainAxisAlignment:
+                                                                MainAxisAlignment
+                                                                    .center,
+                                                                children: [
+                                                                  GetBuilder<
+                                                                      HomeController>(
+                                                                      builder:
+                                                                          (context) {
+                                                                        String
+                                                                        currentdiscount =
+                                                                            "";
+                                                                        DateTime
+                                                                        date =
+                                                                        DateTime.now();
+                                                                        String
+                                                                        dateFormat =
+                                                                        DateFormat('EEEE').format(date);
+                                                                        if (dateFormat == "Friday" ||
+                                                                            dateFormat ==
+                                                                                "Saturday" ||
+                                                                            dateFormat ==
+                                                                                "Sunday") {
+                                                                          currentdiscount =
+                                                                          hData.allrest[index]["fridaySundayOffer"]?.toString() ?? "0";
+                                                                        } else {
+                                                                          currentdiscount =
+                                                                          hData.allrest[index]["mondayThursdayOffer"]?.toString() ?? "0";
+                                                                        }
+
+                                                                        return Text(
+                                                                          "${currentdiscount}% OFF",
+                                                                          style: TextStyle(
+                                                                              fontFamily: "Gilroy Bold",
+                                                                              color:  notifier.textColor,
+                                                                              fontSize: 20),
+                                                                        );
+                                                                      }),
+                                                                  SizedBox(
+                                                                      height:
+                                                                      Get.height * 0.01),
+                                                                  Text(
+                                                                    "Today's Discount".tr
+                                                                        .toUpperCase(),
+                                                                    style: TextStyle(
+                                                                        fontFamily:
+                                                                        "Gilroy Medium",
+                                                                        color:
+                                                                        notifier.textColor,
+                                                                        fontSize:
+                                                                        12),
+                                                                  )
+                                                                ],
+                                                              ),
                                                             ),
-                                                          ),
-                                                        ),
-                                                      ),
+                                                          )),
                                                       Positioned(
                                                         left: 14,
                                                         bottom: 10,
@@ -1085,11 +1553,11 @@ class _HomePageState extends State<HomePage> {
                                                               .start,
                                                           children: [
                                                             SizedBox(
-                                                                height: Get.height * 0.08),
+                                                                height: Get
+                                                                    .height *
+                                                                    0.08),
                                                             Text(
-                                                              hData.allrest[
-                                                              index]
-                                                              ["title"],
+                                                              hData.allrest[index]["title"]?.toString() ?? "Restaurant",
                                                               style: TextStyle(
                                                                   fontSize:
                                                                   16,
@@ -1108,10 +1576,7 @@ class _HomePageState extends State<HomePage> {
                                                                     size:
                                                                     22),
                                                                 Text(
-                                                                  hData.allrest[
-                                                                  index]
-                                                                  [
-                                                                  "rate"],
+                                                                  hData.allrest[index]["rating"]?.toString() ?? "0.0",
                                                                   style: TextStyle(
                                                                       color:
                                                                       greycolor,
@@ -1132,10 +1597,7 @@ class _HomePageState extends State<HomePage> {
                                                                     width: Get.width *
                                                                         0.02),
                                                                 Text(
-                                                                  hData.allrest[
-                                                                  index]
-                                                                  [
-                                                                  "landmark"],
+                                                                  hData.allrest[index]["area"]?.toString() ?? "No address",
                                                                   style: TextStyle(
                                                                       color:
                                                                       greycolor,
@@ -1151,10 +1613,7 @@ class _HomePageState extends State<HomePage> {
                                                               Get.width *
                                                                   0.4,
                                                               child: Text(
-                                                                  hData.allrest[
-                                                                  index]
-                                                                  [
-                                                                  "shortDescription"],
+                                                                  hData.allrest[index]["description"]?.toString() ?? "No description",
                                                                   style: TextStyle(
                                                                       color:
                                                                       greycolor,
@@ -1171,6 +1630,7 @@ class _HomePageState extends State<HomePage> {
                                                 );
                                               },
                                               options: CarouselOptions(
+                                                // aspectRatio: 12,
                                                   enlargeCenterPage: true,
                                                   autoPlay: true,
                                                   height: Get.height * 0.5),
@@ -1184,211 +1644,257 @@ class _HomePageState extends State<HomePage> {
                           ],
                         ),
                       ],
-                    )
-                        : Center(
-                        child: Padding(
-                          padding: EdgeInsets.only(top: Get.height * 0.4),
-                          child:  CircularProgressIndi(),
-                        )));
+                    ));
               })),
         ),
       ),
     );
   }
 
-  bottomsheet() {
-    return showModalBottomSheet(
-        backgroundColor: notifier.background,
-        isScrollControlled: true,
-        context: context,
-        shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(15), topRight: Radius.circular(15))),
-        builder: (context) {
-          return StatefulBuilder(
-              builder: (BuildContext context, StateSetter setState) {
-                return Container(
-                  height: Get.height * 0.35,
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Image.asset("assets/confetti1.png", height: 25),
-                          SizedBox(width: Get.width * 0.02),
-                          Text("special prices only for you".tr.toUpperCase(),
-                              style: TextStyle(
-                                  fontFamily: "Gilroy Bold",
-                                  color: orangeColor,
-                                  fontSize: 15)),
-                          SizedBox(width: Get.width * 0.02),
-                          Image.asset("assets/confetti.png", height: 25)
-                        ],
-                      ),
-                      SizedBox(
-                        height: Get.height * 0.2,
-                        width: double.infinity,
-                        child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            shrinkWrap: true,
-                            padding: EdgeInsets.zero,
-                            itemCount: hData.PlanData.length,
-                            itemBuilder: (context, index) {
-                              return Stack(children: [
-                                Container(
-                                  height: 153,
-                                  width: 172,
-                                  padding: EdgeInsets.symmetric(
-                                      vertical: 16, horizontal: 6),
-                                  child: InkWell(
-                                    onTap: () {
-                                      setState(() {});
-                                      defultplan = true;
-                                      SelectedIndex = hData.PlanData[index]["id"];
-                                      print(
-                                          "*+*+*+*+*+*+*-+-/-+ hData PlanData-*-+*-*/-+*----*-+-*+-*+"
-                                              "${hData.PlanData[index]["price"]}");
-                                      plan1 = hData.PlanData[index]["title"];
-                                      plan2 = hData.PlanData[index]["price"];
-                                      planid = hData.PlanData[index]["id"];
-                                      planprice = hData.PlanData[index]["price"];
-                                    },
-                                    child: Container(
-                                      // height: Get.height * 0.45,
-                                      width: Get.width * 0.46,
-                                      padding: EdgeInsets.symmetric(
-                                          horizontal: 10, vertical: 12),
-                                      decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(12),
-                                          color: notifier.containerColor,
-                                          border: Border.all(
-                                              color: SelectedIndex ==
-                                                  hData.PlanData[index]["id"]
-                                                  ? orangeColor
-                                                  : transparent,
-                                              width: 2)),
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                        children: [
-                                          Text(hData.PlanData[index]["title"],
-                                              style: TextStyle(
-                                                  color: notifier.textColor,
-                                                  fontFamily: "Gilroy Bold",
-                                                  fontSize: 16)),
-                                          SizedBox(height: Get.height * 0.015),
-                                          Row(
-                                            children: [
-                                              Text(
-                                                  "${hData.homeDataList["currency"]}${hData.PlanData[index]["price"]}",
-                                                  style: TextStyle(
-                                                      color: notifier.textColor,
-                                                      fontFamily: "Gilroy Bold",
-                                                      fontSize: 18)),
-                                            ],
-                                          ),
-                                          SizedBox(height: Get.height * 0.015),
-                                          Text("${hData.PlanData[index]["day"]}day",
-                                              style: TextStyle(
-                                                  color: darkpurple,
-                                                  fontFamily: "Gilroy Bold",
-                                                  fontSize: 16))
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  right: -0.2,
-                                  top: 4,
-                                  child: InkWell(
-                                    onTap: () {
-                                      // selected = selected;
-                                    },
-                                    child: CircleAvatar(
-                                      radius: 14,
-                                      backgroundColor: SelectedIndex ==
-                                          hData.PlanData[index]["id"]
-                                          ? orangeColor
-                                          : transparent,
-                                      child: Icon(Icons.check,
-                                          color: SelectedIndex ==
-                                              hData.PlanData[index]["id"]
-                                              ? notifier.textColor
-                                              : transparent),
-                                    ),
-                                  ),
-                                )
-                              ]);
-                            }),
-                      ),
-                      InkWell(
-                        onTap: () {
-                          // ignore: unnecessary_null_comparison
-                          if (planprice != null) {
-                            Get.back();
-                            paymentSheett();
-                          } else {
-                            ApiWrapper.showToastMessage("Please select at least one plan".tr);
-                          }
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                stops: [0.1, 0.8, 1],
-                                colors: <Color>[
-                                  orangeColor,
-                                  orangeColor,
-                                  Colors.red
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                              color: orangeColor),
-                          height: 50,
-                          width: double.infinity,
-                          child: Center(
-                            child: Column(
-                              children: [
-                                SizedBox(height: Get.height * 0.008),
-                                Text(
-                                  "buy EasyGo".tr.toUpperCase(),
-                                  style: TextStyle(
-                                      fontFamily: 'Gilroy Bold',
-                                      fontSize: 16,
-                                      color: WhiteColor),
-                                ),
-                                !defultplan
-                                    ? Text(
-                                  "select plan".tr,
-                                  style: TextStyle(
-                                      fontFamily: 'Gilroy Bold',
-                                      fontSize: 14,
-                                      color: WhiteColor),
-                                )
-                                    : Text(
-                                  "at ${hData.homeDataList["currency"]}${plan2} for ${plan1}",
-                                  style: TextStyle(
-                                      fontFamily: 'Gilroy Bold',
-                                      fontSize: 14,
-                                      color: WhiteColor),
-                                )
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              });
-        });
+  webViewPaymentMethod(
+      {required String initialUrl,
+        required String status1,
+        required String status2}) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PaymentWebVIew(
+          initialUrl: initialUrl,
+          navigationDelegate: (request) async {
+            final uri = Uri.parse(request.url);
+
+            debugPrint("************ URL:--- $initialUrl");
+            debugPrint("************ Navigating to URL: ${request.url}");
+            debugPrint("************ Parsed URI: $uri");
+            debugPrint("************ 2435243254: ${uri.queryParameters[status1]}");
+
+            // Check the status parameter instead of Result
+            final status = uri.queryParameters[status1];
+            debugPrint(" /*/*/*/*/*/*/*/*/*/*/*/*/*/ Status ---- $status");
+            if (status == null) {
+              debugPrint("No status parameter found.");
+            } else {
+              debugPrint("Status parameter: $status");
+              if (status == status2) {
+                debugPrint("Purchase successful.");
+                Get.back();
+                Get.back();
+                planpurchase.planpurchase(
+                    planid: planid,
+                    pname: paymenttital,
+                    transactionid: "transactionid");
+
+                return NavigationDecision.prevent;
+              } else {
+                debugPrint("Purchase failed with status: $status.");
+                Navigator.pop(context);
+                // ignore: unnecessary_string_interpolations
+                tost("$status");
+                return NavigationDecision.prevent;
+              }
+            }
+            return NavigationDecision.navigate;
+          },
+        ),
+      ),
+    );
   }
+
+  // Plan section removed as requested
+  // bottomsheet() {
+  //   // Get.back();
+  //   return showModalBottomSheet(
+  //       backgroundColor: RedColor.withOpacity(0.9),
+  //       isScrollControlled: true,
+  //       context: context,
+  //       shape: const RoundedRectangleBorder(
+  //           borderRadius: BorderRadius.only(
+  //               topLeft: Radius.circular(15), topRight: Radius.circular(15))),
+  //       builder: (context) {
+  //         return StatefulBuilder(
+  //             builder: (BuildContext context, StateSetter setState) {
+  //               return Container(
+  //                 height: Get.height * 0.35,
+  //                 padding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+  //                 child: Column(
+  //                   children: [
+  //                     Row(
+  //                       mainAxisAlignment: MainAxisAlignment.center,
+  //                       children: [
+  //                         Image.asset("assets/confetti1.png", height: 25),
+  //                         SizedBox(width: Get.width * 0.02),
+  //                         Text("special prices only for you".tr.toUpperCase(),
+  //                             style: TextStyle(
+  //                                 fontFamily: "Gilroy Bold",
+  //                                 color: orangeColor,
+  //                                 fontSize: 15)),
+  //                         SizedBox(width: Get.width * 0.02),
+  //                         Image.asset("assets/confetti.png", height: 25)
+  //                       ],
+  //                     ),
+  //                     SizedBox(
+  //                       height: Get.height * 0.2,
+  //                       width: double.infinity,
+  //                       child: ListView.builder(
+  //                           scrollDirection: Axis.horizontal,
+  //                           shrinkWrap: true,
+  //                           padding: EdgeInsets.zero,
+  //                           itemCount: hData.PlanData.length,
+  //                           itemBuilder: (context, index) {
+  //                             return Stack(children: [
+  //                               Container(
+  //                                 height: 150,
+  //                                 width: 172,
+  //
+  //                                 padding: EdgeInsets.symmetric(
+  //                                     vertical: 16, horizontal: 6),
+  //                                 child: InkWell(
+  //                                   onTap: () {
+  //                                     setState(() {});
+  //                                     defultplan = true;
+  //                                     SelectedIndex = hData.PlanData[index]["id"];
+  //                                     print(
+  //                                         "*+*+*+*+*+*+*-+-/-+ hData PlanData-*-+*-*/-+*----*-+-*+-*+"
+  //                                             "${hData.PlanData[index]["price"]}");
+  //                                     plan1 = hData.PlanData[index]["title"];
+  //                                     plan2 = hData.PlanData[index]["price"];
+  //                                     planid = hData.PlanData[index]["id"];
+  //                                     planprice = hData.PlanData[index]["price"];
+  //                                   },
+  //                                   child: Container(
+  //                                     padding: EdgeInsets.symmetric(
+  //                                         horizontal: 14, vertical: 6),
+  //                                     decoration: BoxDecoration(
+  //                                         borderRadius: BorderRadius.circular(12),
+  //                                         color: notifier.background,
+  //                                         border: Border.all(
+  //                                             color: SelectedIndex ==
+  //                                                 hData.PlanData[index]["id"]
+  //                                                 ? orangeColor
+  //                                                 : transparent,
+  //                                             width: 2)),
+  //                                     child: Column(
+  //                                       mainAxisAlignment: MainAxisAlignment.center,
+  //                                       crossAxisAlignment:
+  //                                       CrossAxisAlignment.start,
+  //                                       children: [
+  //                                         Text(hData.PlanData[index]["title"],
+  //                                             style: TextStyle(
+  //                                                 color:  notifier.textColor,
+  //                                                 fontFamily: "Gilroy Bold",
+  //                                                 fontSize: 16)),
+  //                                         SizedBox(height: Get.height * 0.015),
+  //                                         Row(
+  //                                           children: [
+  //                                             Text(
+  //                                                 "${hData.homeDataList["currency"]}${hData.PlanData[index]["price"]}",
+  //                                                 style: TextStyle(
+  //                                                     color:  notifier.textColor,
+  //                                                     fontFamily: "Gilroy Bold",
+  //                                                     fontSize: 18)),
+  //                                           ],
+  //                                         ),
+  //                                         SizedBox(height: Get.height * 0.015),
+  //                                         Text("${hData.PlanData[index]["day"]}day",
+  //                                             style: TextStyle(
+  //                                                 color: darkpurple,
+  //                                                 fontFamily: "Gilroy Bold",
+  //                                                 fontSize: 16))
+  //                                       ],
+  //                                     ),
+  //                                   ),
+  //                                 ),
+  //                               ),
+  //                               Positioned(
+  //                                 right: -0.2,
+  //                                 top: 4,
+  //                                 child: InkWell(
+  //                                   onTap: () {
+  //                                     // selected = selected;
+  //                                   },
+  //                                   child: CircleAvatar(
+  //                                     radius: 14,
+  //                                     backgroundColor: SelectedIndex ==
+  //                                         hData.PlanData[index]["id"]
+  //                                         ? orangeColor
+  //                                         : transparent,
+  //                                     child: Icon(Icons.check,
+  //                                         color: SelectedIndex ==
+  //                                             hData.PlanData[index]["id"]
+  //                                             ?  notifier.textColor
+  //                                             : transparent),
+  //                                   ),
+  //                                 ),
+  //                               )
+  //                             ]);
+  //                           }),
+  //                     ),
+  //                     InkWell(
+  //                       onTap: () {
+  //                         // ignore: unnecessary_null_comparison
+  //                         if (planprice != null) {
+  //                           Get.back();
+  //                           paymentSheett();
+  //                         } else {
+  //                           ApiWrapper.showToastMessage(
+  //                               "Please select at least one plan".tr);
+  //                         }
+  //                       },
+  //                       child: Container(
+  //                         decoration: BoxDecoration(
+  //                             gradient: LinearGradient(
+  //                               stops: [0.1, 0.8, 1],
+  //                               colors: <Color>[
+  //                                 orangeColor,
+  //                                 orangeColor,
+  //                                 Colors.red
+  //                               ],
+  //                             ),
+  //                             borderRadius: BorderRadius.circular(12),
+  //                             color: orangeColor),
+  //                         padding: EdgeInsets.symmetric(vertical: 5),
+  //                         width: double.infinity,
+  //                         child: Center(
+  //                           child: Column(
+  //                             children: [
+  //                               Text(
+  //                                 "buy EasyGo".tr.toUpperCase(),
+  //                                 style: TextStyle(
+  //                                     fontFamily: 'Gilroy Bold',
+  //                                     fontSize: 16,
+  //                                     color: WhiteColor),
+  //                               ),
+  //                               SizedBox(height: 2),
+  //                               !defultplan
+  //                                   ? Text(
+  //                                 "select plan".tr,
+  //                                 style: TextStyle(
+  //                                     fontFamily: 'Gilroy Bold',
+  //                                     fontSize: 14,
+  //                                     color: WhiteColor),
+  //                               )
+  //                                   : Text(
+  //                                 "at ${hData.homeDataList["currency"]}${plan2} for ${plan1}",
+  //                                 style: TextStyle(
+  //                                     fontFamily: 'Gilroy Bold',
+  //                                     fontSize: 14,
+  //                                     color: WhiteColor),
+  //                               )
+  //                             ],
+  //                           ),
+  //                         ),
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 ),
+  //               );
+  //             });
+  //       });
+  // }
 
   Future paymentSheett() {
     return showModalBottomSheet(
-      backgroundColor: notifier.background,
+      backgroundColor: boxcolor,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
@@ -1419,7 +1925,7 @@ class _HomePageState extends State<HomePage> {
                       SizedBox(width: Get.width / 14),
                       Text("Select Payment Method".tr,
                           style: TextStyle(
-                              color: notifier.textColor,
+                              color: WhiteColor,
                               fontSize: Get.height / 40,
                               fontFamily: "Gilroy Medium")),
                     ]),
@@ -1437,7 +1943,7 @@ class _HomePageState extends State<HomePage> {
                             return payment.paymentGetway[i]["p_show"] == "1"
                                 ? Padding(
                               padding: const EdgeInsets.symmetric(
-                                  vertical: 8),
+                                  vertical: 14),
                               child: sugestlocationtype(
                                 borderColor: selectidPay ==
                                     payment.paymentGetway[i]["id"]
@@ -1445,9 +1951,9 @@ class _HomePageState extends State<HomePage> {
                                     : greycolor.withOpacity(0.5),
                                 title: payment.paymentGetway[i]
                                 ["title"],
-                                titleColor: notifier.textColor,
+                                titleColor: WhiteColor,
                                 val: 0,
-                                image: payment.paymentGetway[i]["image"] ?? "https://via.placeholder.com/100x100",
+                                image: payment.paymentGetway[i]["image"] ?? "https://picsum.photos/100/100",
                                 adress: payment.paymentGetway[i]
                                 ["subtitle"],
                                 ontap: () async {
@@ -1537,13 +2043,11 @@ class _HomePageState extends State<HomePage> {
                                   print("PAYSTACK URL  ${request.url}");
                                   Get.back();
                                   Get.back();
-                                  paystackCont.checkPaystack(sKey:   planpurchase.planpurchase(
+                                  // Plan functionality disabled
+                                  planpurchase.planpurchase(
                                       planid: planid,
                                       pname: paymenttital,
-                                      transactionid: "transactionid") )
-                                      .then((value) {
-
-                                  },);
+                                      transactionid: "transactionid");
 
                                   return NavigationDecision.navigate;
                                 },
@@ -1692,7 +2196,15 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget sugestlocationtype({Function()? ontap, title, val, image, adress, radio, Color? borderColor, Color? titleColor}) {
+  Widget sugestlocationtype(
+      {Function()? ontap,
+        title,
+        val,
+        image,
+        adress,
+        radio,
+        Color? borderColor,
+        Color? titleColor}) {
     return StatefulBuilder(
         builder: (BuildContext context, StateSetter setState) {
           return InkWell(
@@ -1701,7 +2213,7 @@ class _HomePageState extends State<HomePage> {
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: Get.width / 18),
               child: Container(
-                height: Get.height / 10,
+                height: Get.height / 9,
                 decoration: BoxDecoration(
                     border: Border.all(color: borderColor!, width: 1),
                     color: Colors.transparent,
@@ -1770,6 +2282,7 @@ class _HomePageState extends State<HomePage> {
       'prefill': {'contact': mobile, 'email': email},
     };
     print("#################" "$username");
+
     print("%%%%%%%%%%%%%%%%%" "$mobile");
     print("&&&&&&&&&&&&&&&&&" "$email");
 
@@ -1779,18 +2292,6 @@ class _HomePageState extends State<HomePage> {
     } catch (e) {
       debugPrint('Error: e');
     }
-  }
-
-  Future tost(String text) {
-    return Fluttertoast.showToast(
-      msg: text,
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.BOTTOM_LEFT,
-      timeInSecForIosWeb: 1,
-      backgroundColor: Colors.grey.shade300,
-      textColor: Colors.black,
-      fontSize: 16.0,
-    );
   }
 
   stripePayment() {
@@ -1898,6 +2399,8 @@ class _HomePageState extends State<HomePage> {
                                             color: orangeColor,
                                           ),
                                         ),
+
+
                                         enabledBorder: OutlineInputBorder(
                                           borderSide: BorderSide(
                                             color: orangeColor,
@@ -2101,16 +2604,6 @@ class _HomePageState extends State<HomePage> {
       showToastMessage("Payment card is valid".tr);
     }
   }
-
-  // ignore: unused_element
-  String _getReference() {
-    var platform = (Platform.isIOS) ? 'iOS' : 'Android';
-    final thisDate = DateTime.now().millisecondsSinceEpoch;
-    return 'ChargedFrom${platform}_$thisDate';
-  }
-
-
-
   // payplepayment({required Function onSuccess}) {
   //   return Navigator.of(context).push(MaterialPageRoute(
   //     builder: (context) {
@@ -2175,10 +2668,36 @@ class _HomePageState extends State<HomePage> {
   //   ));
   // }
 
+  // Helper method for bag availability color
+  Color _getBagAvailabilityColor(Map<String, dynamic> bag) {
+    int quantity = int.tryParse(bag["quantity"]?.toString() ?? "0") ?? 0;
+    if (quantity > 5) return Colors.green;
+    if (quantity > 0) return Colors.orange;
+    return Colors.red;
+  }
+}
+
+Future tost(String text) {
+  return Fluttertoast.showToast(
+    msg: text,
+    toastLength: Toast.LENGTH_SHORT,
+    gravity: ToastGravity.BOTTOM_LEFT,
+    timeInSecForIosWeb: 1,
+    backgroundColor: Colors.grey.shade300,
+    textColor: Colors.black,
+    fontSize: 16.0,
+  );
 }
 
 class Slide {
   String image;
 
   Slide(this.image);
+}
+
+// Dummy class to replace plan functionality
+class _DummyPlanPurchase {
+  void planpurchase({String? planid, String? pname, String? transactionid}) {
+    print("Plan functionality disabled - would have processed: planid=$planid, pname=$pname, transactionid=$transactionid");
+  }
 }

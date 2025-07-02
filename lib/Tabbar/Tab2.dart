@@ -2,9 +2,9 @@
 // ignore_for_file: camel_case_types, use_key_in_widget_constructors, annotate_overrides,  unused_field, unused_element, avoid_unnecessary_containers, unused_import, deprecated_member_use
 
 
-import 'package:foodrescue_app/Getx_Controller/Hotel_details_Controller.dart';
-import 'package:foodrescue_app/Payment/Payment_Discount.dart';
-import 'package:foodrescue_app/Payment/Payment_Successfull.dart';
+import 'package:foodrescue_app/controllers/Hotel_details_Controller.dart';
+import 'package:foodrescue_app/views/Payment/Payment_Discount.dart';
+import 'package:foodrescue_app/views/Payment/Payment_Successfull.dart';
 import 'package:foodrescue_app/Utils/Colors.dart';
 import 'package:foodrescue_app/Utils/Custom_widegt.dart';
 import 'package:foodrescue_app/Utils/String.dart';

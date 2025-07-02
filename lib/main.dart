@@ -1,5 +1,5 @@
 import 'package:foodrescue_app/Utils/dark_light_mode.dart';
-import 'package:foodrescue_app/IntroScreen/IntroScreen.dart';
+import 'package:foodrescue_app/views/onboarding/IntroScreen.dart';
 import 'package:foodrescue_app/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';

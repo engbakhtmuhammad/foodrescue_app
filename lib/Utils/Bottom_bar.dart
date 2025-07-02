@@ -2,11 +2,11 @@
 // ignore_for_file: unused_field, library_private_types_in_public_api, camel_case_types, prefer_const_constructors, file_names, prefer_const_constructors_in_immutables
 // ignore_for_file: use_key_in_widget_constructors, annotate_overrides, prefer_const_literals_to_create_immutables,  unused_element, avoid_unnecessary_containers, non_constant_identifier_names, unused_import, deprecated_member_use
 
-import 'package:foodrescue_app/HomeScreen/NewHomePage.dart';
-import 'package:foodrescue_app/HomeScreen/Nearby_hotel.dart';
-import 'package:foodrescue_app/HomeScreen/SearchPage.dart';
-import 'package:foodrescue_app/HomeScreen/FavouritesPage.dart';
-import 'package:foodrescue_app/Profile/Profile.dart';
+import 'package:foodrescue_app/views/home/NewHomePage.dart';
+import 'package:foodrescue_app/views/restaurant/Nearby_hotel.dart';
+import 'package:foodrescue_app/views/browse/SearchPage.dart';
+import 'package:foodrescue_app/views/favourites/FavouritesPage.dart';
+import 'package:foodrescue_app/views/Profile/Profile.dart';
 import 'package:foodrescue_app/Utils/Colors.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';

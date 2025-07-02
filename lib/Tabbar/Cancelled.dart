@@ -1,7 +1,7 @@
 // ignore_for_file: file_names, must_be_immutable
 
-import 'package:foodrescue_app/Getx_Controller/Table_status_wise_controller.dart';
-import 'package:foodrescue_app/Profile/Table_booking_details.dart';
+import 'package:foodrescue_app/controllers/Table_status_wise_controller.dart';
+import 'package:foodrescue_app/views/Profile/Table_booking_details.dart';
 import 'package:foodrescue_app/Utils/Colors.dart';
 import 'package:foodrescue_app/Utils/Custom_widegt.dart';
 import 'package:flutter/material.dart';

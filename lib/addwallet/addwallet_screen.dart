@@ -3,19 +3,19 @@
 
 import 'dart:io';
 
-import 'package:foodrescue_app/Getx_Controller/Controller.dart';
-import 'package:foodrescue_app/Getx_Controller/PaymentGetwey_controller.dart';
-import 'package:foodrescue_app/Getx_Controller/Wallet_controller.dart';
+import 'package:foodrescue_app/controllers/Controller.dart';
+import 'package:foodrescue_app/controllers/PaymentGetwey_controller.dart';
+import 'package:foodrescue_app/controllers/Wallet_controller.dart';
 import 'package:foodrescue_app/Utils/Colors.dart';
 import 'package:foodrescue_app/Utils/Custom_widegt.dart';
 import 'package:foodrescue_app/api/Data_save.dart';
 import 'package:foodrescue_app/config/app_config.dart';
-import 'package:foodrescue_app/paymentscreen/FlutterWave.dart';
-import 'package:foodrescue_app/paymentscreen/InputFormater.dart';
-import 'package:foodrescue_app/paymentscreen/PaymentCard.dart';
-import 'package:foodrescue_app/paymentscreen/Paypal.dart';
-import 'package:foodrescue_app/paymentscreen/Paytm.dart';
-import 'package:foodrescue_app/paymentscreen/StripeWeb.dart';
+import 'package:foodrescue_app/views/Payment/FlutterWave.dart';
+import 'package:foodrescue_app/views/Payment/InputFormater.dart';
+import 'package:foodrescue_app/views/Payment/PaymentCard.dart';
+import 'package:foodrescue_app/views/Payment/Paypal.dart';
+import 'package:foodrescue_app/views/Payment/Paytm.dart';
+import 'package:foodrescue_app/views/Payment/StripeWeb.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

@@ -1,7 +1,7 @@
 // ignore_for_file: prefer_const_constructors, sort_child_properties_last, prefer_interpolation_to_compose_strings, avoid_print, unnecessary_new, unused_import, depend_on_referenced_packages
 
-import 'package:foodrescue_app/Getx_Controller/Controller.dart';
-import 'package:foodrescue_app/Getx_Controller/Wallet_controller.dart';
+import 'package:foodrescue_app/controllers/Controller.dart';
+import 'package:foodrescue_app/controllers/Wallet_controller.dart';
 import 'package:foodrescue_app/Utils/Colors.dart';
 import 'package:foodrescue_app/Utils/Custom_widegt.dart';
 import 'package:foodrescue_app/api/Data_save.dart';
