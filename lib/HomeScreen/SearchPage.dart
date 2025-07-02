@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:foodrescue_app/Utils/Colors.dart';
 import 'package:foodrescue_app/controllers/home_controller.dart';
+import 'package:foodrescue_app/controllers/favourites_controller.dart';
 import 'package:foodrescue_app/Utils/dark_light_mode.dart';
 import 'package:foodrescue_app/HomeScreen/SurpriseBagDetails.dart';
 import 'package:foodrescue_app/HomeScreen/Hotel_Details.dart';
@@ -20,6 +21,7 @@ class SearchPage extends StatefulWidget {
 
 class _SearchPageState extends State<SearchPage> {
   final HomeController homeController = Get.find<HomeController>();
+  final FavouritesController favouritesController = Get.put(FavouritesController());
   final TextEditingController searchController = TextEditingController();
   String selectedSortBy = "Relevance";
   bool isListView = true;
@@ -495,17 +497,18 @@ class _SearchPageState extends State<SearchPage> {
 
     return Stack(
       children: [
-        // Use a simpler approach to reduce rendering issues
+        // Optimized Google Map with minimal features to prevent rendering issues
         GoogleMap(
-          key: ValueKey('search_map'),
+          key: ValueKey('search_map_optimized'),
           onMapCreated: (GoogleMapController controller) {
-            if (!_isMapReady) {
+            // Prevent multiple controller assignments
+            if (mapController == null) {
               mapController = controller;
               _isMapReady = true;
 
-              // Update markers after a short delay
-              Future.delayed(Duration(milliseconds: 100), () {
-                if (mounted && _isMapReady) {
+              // Delayed marker update to prevent rendering conflicts
+              Future.delayed(Duration(milliseconds: 500), () {
+                if (mounted && _isMapReady && mapController != null) {
                   _updateMapMarkers();
                 }
               });
@@ -513,15 +516,16 @@ class _SearchPageState extends State<SearchPage> {
           },
           initialCameraPosition: CameraPosition(
             target: currentLocation,
-            zoom: 14.0,
+            zoom: 13.0, // Reduced zoom for better performance
           ),
           markers: markers,
-          myLocationEnabled: false, // Disable to reduce rendering load
+          // Minimal configuration to reduce rendering load
+          myLocationEnabled: false,
           myLocationButtonEnabled: false,
           zoomControlsEnabled: false,
           mapToolbarEnabled: false,
           compassEnabled: false,
-          rotateGesturesEnabled: false, // Disable to reduce rendering load
+          rotateGesturesEnabled: false,
           scrollGesturesEnabled: true,
           tiltGesturesEnabled: false,
           zoomGesturesEnabled: true,
@@ -529,7 +533,7 @@ class _SearchPageState extends State<SearchPage> {
           buildingsEnabled: false,
           trafficEnabled: false,
           indoorViewEnabled: false,
-          liteModeEnabled: false,
+          liteModeEnabled: true, // Enable lite mode for better performance
         ),
         // Custom location button
         Positioned(
@@ -773,18 +777,33 @@ class _SearchPageState extends State<SearchPage> {
                   Positioned(
                     top: 12,
                     right: 12,
-                    child: Container(
-                      padding: EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.favorite_border,
-                        size: 20,
-                        color: Colors.grey[600],
-                      ),
-                    ),
+                    child: Obx(() {
+                      final bagId = bag["id"] ?? DateTime.now().millisecondsSinceEpoch.toString();
+                      final isFav = favouritesController.isFavourite(bagId);
+
+                      return GestureDetector(
+                        onTap: () {
+                          favouritesController.toggleFavourite(
+                            bag,
+                            restaurant["title"] ?? "Unknown Restaurant",
+                            restaurant["image"] ?? "",
+                            restaurant["address"] ?? "Address not available",
+                          );
+                        },
+                        child: Container(
+                          padding: EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.9),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            isFav ? Icons.favorite : Icons.favorite_border,
+                            size: 20,
+                            color: isFav ? Colors.red : Colors.grey[600],
+                          ),
+                        ),
+                      );
+                    }),
                   ),
                 ],
               ),
@@ -1068,12 +1087,17 @@ class _SearchPageState extends State<SearchPage> {
       // Clear existing markers
       final newMarkers = <Marker>{};
 
-      // Add markers for surprise bags
-      for (int i = 0; i < filteredBags.length; i++) {
-        final bag = filteredBags[i];
-        // Generate random coordinates around current location for demo
-        final lat = currentLocation.latitude + (i * 0.01) - 0.02;
-        final lng = currentLocation.longitude + (i * 0.01) - 0.02;
+      // Limit markers to prevent performance issues (max 8 total)
+      final maxBagMarkers = 4;
+      final maxRestaurantMarkers = 4;
+
+      // Add markers for surprise bags (limited)
+      final bagsToShow = filteredBags.take(maxBagMarkers).toList();
+      for (int i = 0; i < bagsToShow.length; i++) {
+        final bag = bagsToShow[i];
+        // Generate coordinates around current location for demo
+        final lat = currentLocation.latitude + (i * 0.005) - 0.01;
+        final lng = currentLocation.longitude + (i * 0.005) - 0.01;
 
         newMarkers.add(
           Marker(
@@ -1088,12 +1112,13 @@ class _SearchPageState extends State<SearchPage> {
         );
       }
 
-      // Add markers for restaurants
-      for (int i = 0; i < filteredRestaurants.length; i++) {
-        final restaurant = filteredRestaurants[i];
-        // Generate random coordinates around current location for demo
-        final lat = currentLocation.latitude + ((i + filteredBags.length) * 0.01) - 0.02;
-        final lng = currentLocation.longitude + ((i + filteredBags.length) * 0.01) - 0.02;
+      // Add markers for restaurants (limited)
+      final restaurantsToShow = filteredRestaurants.take(maxRestaurantMarkers).toList();
+      for (int i = 0; i < restaurantsToShow.length; i++) {
+        final restaurant = restaurantsToShow[i];
+        // Generate coordinates around current location for demo
+        final lat = currentLocation.latitude + ((i + bagsToShow.length) * 0.005) - 0.01;
+        final lng = currentLocation.longitude + ((i + bagsToShow.length) * 0.005) - 0.01;
 
         newMarkers.add(
           Marker(

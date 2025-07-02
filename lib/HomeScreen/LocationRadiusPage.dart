@@ -295,6 +295,7 @@ class _LocationRadiusPageState extends State<LocationRadiusPage> {
                       child: CircularProgressIndicator(color: orangeColor),
                     )
                   : GoogleMap(
+                      key: ValueKey('location_radius_map'),
                       onMapCreated: _onMapCreated,
                       initialCameraPosition: CameraPosition(
                         target: currentLocation,
@@ -306,6 +307,13 @@ class _LocationRadiusPageState extends State<LocationRadiusPage> {
                       myLocationButtonEnabled: false,
                       zoomControlsEnabled: false,
                       mapToolbarEnabled: false,
+                      compassEnabled: false,
+                      rotateGesturesEnabled: false,
+                      tiltGesturesEnabled: false,
+                      buildingsEnabled: false,
+                      trafficEnabled: false,
+                      indoorViewEnabled: false,
+                      liteModeEnabled: true, // Enable lite mode for better performance
                     ),
             ),
           ),
@@ -452,6 +460,17 @@ class _LocationRadiusPageState extends State<LocationRadiusPage> {
 
   @override
   void dispose() {
+    // Clean up map resources
+    if (mapController != null) {
+      try {
+        mapController?.dispose();
+      } catch (e) {
+        // Ignore disposal errors
+      }
+      mapController = null;
+    }
+    circles.clear();
+    markers.clear();
     searchController.dispose();
     super.dispose();
   }

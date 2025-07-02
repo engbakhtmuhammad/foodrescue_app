@@ -70,7 +70,11 @@ dependencies:
 #  flutter_paystack: ^1.0.7
   webview_flutter_android: ^3.16.0
   # social_media_recorder: ^0.1.86
-  # flutter_paypal: ^1.0.4
+
+  # Payment SDKs
+  flutter_stripe: ^11.1.0
+  flutter_paypal_payment: ^1.0.6
+  pay: ^2.0.0
 
   lottie: ^3.0.0
   cached_network_image: ^3.3.0

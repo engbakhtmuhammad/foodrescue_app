@@ -5,7 +5,7 @@
 import 'package:foodrescue_app/HomeScreen/NewHomePage.dart';
 import 'package:foodrescue_app/HomeScreen/Nearby_hotel.dart';
 import 'package:foodrescue_app/HomeScreen/SearchPage.dart';
-import 'package:foodrescue_app/HomeScreen/Notification.dart';
+import 'package:foodrescue_app/HomeScreen/FavouritesPage.dart';
 import 'package:foodrescue_app/Profile/Profile.dart';
 import 'package:foodrescue_app/Utils/Colors.dart';
 import 'package:flutter/material.dart';
@@ -34,7 +34,7 @@ class _BottomBarState extends State<BottomBar> {
     NewHomePage(),
     SearchPage(),
     Nearbyhotel(),
-    Notificationpage(),
+    FavouritesPage(),
     Profile(),
   ];
   @override
@@ -98,12 +98,12 @@ class _BottomBarState extends State<BottomBar> {
                   height: MediaQuery.of(context).size.height / 35),
               label: 'Popular'.tr),
           BottomNavigationBarItem(
-              icon: Image.asset("assets/onesignal.png",
-                  color: selectedIndex == 3
-                      ? orangeColor
-                      : greycolor.withOpacity(0.5),
-                  height: MediaQuery.of(context).size.height / 35),
-              label: 'Notification'.tr),
+              icon:  Image.asset("assets/heart.png",
+                color: selectedIndex == 3
+                    ? orangeColor
+                    : greycolor.withOpacity(0.5),
+                height: MediaQuery.of(context).size.height / 35),
+              label: 'Favourites'.tr),
           BottomNavigationBarItem(
             icon: Image.asset("assets/profile.png",
                 color: selectedIndex == 4

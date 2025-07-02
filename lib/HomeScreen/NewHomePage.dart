@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:foodrescue_app/Utils/Colors.dart';
 import 'package:foodrescue_app/controllers/home_controller.dart';
+import 'package:foodrescue_app/controllers/favourites_controller.dart';
 import 'package:foodrescue_app/Utils/dark_light_mode.dart';
 import 'package:foodrescue_app/HomeScreen/SurpriseBagDetails.dart';
 import 'package:foodrescue_app/HomeScreen/Notification.dart';
@@ -10,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import 'LocationRadiusPage.dart';
+import 'SearchPage.dart';
 
 class NewHomePage extends StatefulWidget {
   const NewHomePage({Key? key}) : super(key: key);
@@ -20,6 +22,7 @@ class NewHomePage extends StatefulWidget {
 
 class _NewHomePageState extends State<NewHomePage> {
   final HomeController homeController = Get.find<HomeController>();
+  final FavouritesController favouritesController = Get.put(FavouritesController());
   String selectedCategory = "all";
 
   @override
@@ -38,11 +41,11 @@ class _NewHomePageState extends State<NewHomePage> {
       return List<Map<String, dynamic>>.from(homeController.surpriseBags);
     } else {
       return homeController.surpriseBags.where((bag) {
-        // Check the bag's cuisine directly
-        final bagCuisine = bag["cuisine"]?.toString().toLowerCase() ?? "";
-        final categoryMatch = bagCuisine.contains(selectedCategory.toLowerCase());
+        // Check the bag's category field
+        final bagCategory = bag["category"]?.toString().toLowerCase() ?? "";
+        final categoryMatch = bagCategory.contains(selectedCategory.toLowerCase());
 
-        print("Bag: ${bag["title"]}, Cuisine: $bagCuisine, Category: $selectedCategory, Match: $categoryMatch");
+        print("Bag: ${bag["title"]}, Category: $bagCategory, Selected: $selectedCategory, Match: $categoryMatch");
         return categoryMatch;
       }).cast<Map<String, dynamic>>().toList();
     }
@@ -106,7 +109,7 @@ class _NewHomePageState extends State<NewHomePage> {
                   ),
                   child: Image.asset("assets/livelocation.png",
                   color: orangeColor,
-                  height: MediaQuery.of(context).size.height / 35)
+                  height: MediaQuery.of(context).size.height / 25)
                 ),
                 SizedBox(width: 12),
                 Expanded(
@@ -183,16 +186,15 @@ class _NewHomePageState extends State<NewHomePage> {
             itemCount: controller.categories.length,
             itemBuilder: (context, index) {
               final category = controller.categories[index];
-              final categoryId = category["id"]?.toString() ?? "";
               final categoryTitle = category["title"]?.toString() ?? "";
-              final isSelected = selectedCategory == categoryId;
+              final isSelected = selectedCategory == categoryTitle;
 
               return Container(
                 margin: EdgeInsets.only(right: 12),
                 child: InkWell(
                   onTap: () {
                     setState(() {
-                      selectedCategory = categoryId;
+                      selectedCategory = categoryTitle;
                     });
                   },
                   borderRadius: BorderRadius.circular(25),
@@ -241,7 +243,7 @@ class _NewHomePageState extends State<NewHomePage> {
                 ),
               ),
               TextButton(
-                onPressed: () {},
+                onPressed: ()=>Get.to(() => SearchPage()),
                 child: Text(
                   "See all",
                   style: TextStyle(
@@ -480,6 +482,46 @@ class _NewHomePageState extends State<NewHomePage> {
                     ),
                   ),
 
+                  // Favourite button
+                  Positioned(
+                    bottom: 12,
+                    right: 12,
+                    child: Obx(() {
+                      final bagId = bag["id"] ?? DateTime.now().millisecondsSinceEpoch.toString();
+                      final isFav = favouritesController.isFavourite(bagId);
+
+                      return GestureDetector(
+                        onTap: () {
+                          favouritesController.toggleFavourite(
+                            bag,
+                            restaurant["title"] ?? "Unknown Restaurant",
+                            restaurant["image"] ?? "",
+                            restaurant["address"] ?? "Address not available",
+                          );
+                        },
+                        child: Container(
+                          padding: EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.9),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            isFav ? Icons.favorite : Icons.favorite_border,
+                            size: 20,
+                            color: isFav ? Colors.red : Colors.grey[600],
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+
                   // Restaurant logo
                   Positioned(
                     bottom: 12,
@@ -683,6 +725,46 @@ class _NewHomePageState extends State<NewHomePage> {
                         ],
                       ),
                     ),
+                  ),
+
+                  // Favourite button
+                  Positioned(
+                    bottom: 8,
+                    right: 8,
+                    child: Obx(() {
+                      final bagId = bag["id"] ?? DateTime.now().millisecondsSinceEpoch.toString();
+                      final isFav = favouritesController.isFavourite(bagId);
+
+                      return GestureDetector(
+                        onTap: () {
+                          favouritesController.toggleFavourite(
+                            bag,
+                            restaurant["title"] ?? "Unknown Restaurant",
+                            restaurant["image"] ?? "",
+                            restaurant["address"] ?? "Address not available",
+                          );
+                        },
+                        child: Container(
+                          padding: EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.9),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            isFav ? Icons.favorite : Icons.favorite_border,
+                            size: 16,
+                            color: isFav ? Colors.red : Colors.grey[600],
+                          ),
+                        ),
+                      );
+                    }),
                   ),
 
                   // Restaurant logo

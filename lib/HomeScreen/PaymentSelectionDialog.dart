@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
@@ -5,6 +6,10 @@ import '../Utils/Colors.dart';
 import '../Utils/dark_light_mode.dart';
 import '../controllers/payment_controller.dart';
 import '../config/app_config.dart';
+import '../services/stripe_service.dart';
+import '../services/paypal_service.dart';
+import '../services/razorpay_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class PaymentSelectionDialog extends StatefulWidget {
   final double amount;
@@ -114,24 +119,365 @@ class _PaymentSelectionDialogState extends State<PaymentSelectionDialog> {
   }
 
   Future<bool> _processStripePayment() async {
-    // Simulate Stripe payment processing
-    await Future.delayed(Duration(seconds: 3));
-    // In a real app, you would integrate with Stripe SDK
-    return true; // Simulate success
+    try {
+      // Initialize Stripe if not already done
+      await StripeService.init();
+
+      // Get user info for billing details
+      final user = FirebaseAuth.instance.currentUser;
+      final billingDetails = {
+        'email': user?.email ?? '',
+        'name': user?.displayName ?? '',
+      };
+
+      // Process payment with Stripe
+      final result = await StripeService.processPayment(
+        amount: widget.amount,
+        currency: 'USD',
+        billingDetails: billingDetails,
+        metadata: {
+          'reservation_id': widget.reservationId,
+          'app_name': 'Food Rescue App',
+        },
+      );
+
+      if (result['success'] == true) {
+        Get.snackbar(
+          "Payment Successful",
+          "Payment processed successfully via Stripe",
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+        return true;
+      } else {
+        Get.snackbar(
+          "Payment Failed",
+          result['error'] ?? "Stripe payment failed",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        return false;
+      }
+    } catch (e) {
+      Get.snackbar(
+        "Payment Error",
+        "Stripe payment error: ${e.toString()}",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return false;
+    }
   }
 
   Future<bool> _processPayPalPayment() async {
-    // Simulate PayPal payment processing
-    await Future.delayed(Duration(seconds: 3));
-    // In a real app, you would integrate with PayPal SDK
-    return true; // Simulate success
+    try {
+      // Get user info
+      final user = FirebaseAuth.instance.currentUser;
+      final userInfo = {
+        'email': user?.email ?? '',
+        'name': user?.displayName ?? '',
+      };
+
+      // Process payment with PayPal
+      final result = await PayPalService.launchPayPalPayment(
+        context: context,
+        amount: widget.amount,
+        currency: 'USD',
+        description: 'Surprise Bag Payment - Food Rescue App',
+        userInfo: userInfo,
+      );
+
+      if (result['success'] == true) {
+        // Verify payment
+        final verificationResult = await PayPalService.verifyPayment(
+          result['transaction_id'],
+        );
+
+        if (verificationResult['success'] == true) {
+          Get.snackbar(
+            "Payment Successful",
+            "Payment processed successfully via PayPal",
+            backgroundColor: Colors.green,
+            colorText: Colors.white,
+          );
+          return true;
+        } else {
+          Get.snackbar(
+            "Payment Verification Failed",
+            "PayPal payment could not be verified",
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+          );
+          return false;
+        }
+      } else {
+        Get.snackbar(
+          "Payment Failed",
+          result['error'] ?? "PayPal payment failed",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        return false;
+      }
+    } catch (e) {
+      Get.snackbar(
+        "Payment Error",
+        "PayPal payment error: ${e.toString()}",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return false;
+    }
   }
 
   Future<bool> _processRazorPayPayment() async {
-    // Simulate RazorPay payment processing
-    await Future.delayed(Duration(seconds: 3));
-    // In a real app, you would integrate with RazorPay SDK
-    return true; // Simulate success
+    try {
+      // Initialize RazorPay
+      RazorPayService.init();
+
+      // Get user info
+      final user = FirebaseAuth.instance.currentUser;
+      final userInfo = {
+        'email': user?.email ?? '',
+        'name': user?.displayName ?? '',
+        'phone': user?.phoneNumber ?? '',
+      };
+
+      // Create a completer to handle async callback
+      final completer = Completer<bool>();
+
+      // Process payment with RazorPay
+      final result = await RazorPayService.processPayment(
+        amount: widget.amount,
+        currency: 'INR', // RazorPay primarily works with INR
+        description: 'Surprise Bag Payment - Food Rescue App',
+        userInfo: userInfo,
+        onSuccess: (paymentData) async {
+          // Verify payment signature
+          final verificationResult = await RazorPayService.verifyPayment(
+            paymentId: paymentData['payment_id'],
+            orderId: paymentData['order_id'],
+            signature: paymentData['signature'],
+          );
+
+          if (verificationResult['success'] == true) {
+            Get.snackbar(
+              "Payment Successful",
+              "Payment processed successfully via RazorPay",
+              backgroundColor: Colors.green,
+              colorText: Colors.white,
+            );
+            completer.complete(true);
+          } else {
+            Get.snackbar(
+              "Payment Verification Failed",
+              "RazorPay payment could not be verified",
+              backgroundColor: Colors.red,
+              colorText: Colors.white,
+            );
+            completer.complete(false);
+          }
+        },
+        onError: (error) {
+          Get.snackbar(
+            "Payment Failed",
+            error,
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+          );
+          completer.complete(false);
+        },
+      );
+
+      if (result['success'] == true && result['status'] == 'pending') {
+        // Wait for callback result
+        return await completer.future;
+      } else {
+        Get.snackbar(
+          "Payment Failed",
+          result['error'] ?? "RazorPay payment failed",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        return false;
+      }
+    } catch (e) {
+      Get.snackbar(
+        "Payment Error",
+        "RazorPay error: ${e.toString()}",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return false;
+    }
+  }
+
+  // Show card input dialog for Stripe
+  Future<bool?> _showCardInputDialog() async {
+    return await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Text("Enter Card Details"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              decoration: InputDecoration(
+                labelText: "Card Number",
+                hintText: "1234 5678 9012 3456",
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+            ),
+            SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    decoration: InputDecoration(
+                      labelText: "MM/YY",
+                      hintText: "12/25",
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    decoration: InputDecoration(
+                      labelText: "CVV",
+                      hintText: "123",
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 12),
+            TextField(
+              decoration: InputDecoration(
+                labelText: "Cardholder Name",
+                hintText: "John Doe",
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: orangeColor),
+            child: Text("Pay \$${widget.amount.toStringAsFixed(2)}", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Show PayPal login dialog
+  Future<bool?> _showPayPalLoginDialog() async {
+    return await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.payment, color: Colors.blue),
+            SizedBox(width: 8),
+            Text("PayPal Login"),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text("You will be redirected to PayPal to complete your payment."),
+            SizedBox(height: 16),
+            TextField(
+              decoration: InputDecoration(
+                labelText: "PayPal Email",
+                hintText: "your@email.com",
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.email),
+              ),
+            ),
+            SizedBox(height: 12),
+            TextField(
+              decoration: InputDecoration(
+                labelText: "Password",
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.lock),
+              ),
+              obscureText: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+            child: Text("Login & Pay", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Show RazorPay options dialog
+  Future<bool?> _showRazorPayOptionsDialog() async {
+    return await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.payments, color: Colors.indigo),
+            SizedBox(width: 8),
+            Text("RazorPay Payment"),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text("Choose your payment method:"),
+            SizedBox(height: 16),
+            ListTile(
+              leading: Icon(Icons.credit_card),
+              title: Text("Credit/Debit Card"),
+              trailing: Icon(Icons.arrow_forward_ios),
+              onTap: () => Navigator.of(context).pop(true),
+            ),
+            ListTile(
+              leading: Icon(Icons.account_balance),
+              title: Text("Net Banking"),
+              trailing: Icon(Icons.arrow_forward_ios),
+              onTap: () => Navigator.of(context).pop(true),
+            ),
+            ListTile(
+              leading: Icon(Icons.phone_android),
+              title: Text("UPI"),
+              trailing: Icon(Icons.arrow_forward_ios),
+              onTap: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text("Cancel"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override

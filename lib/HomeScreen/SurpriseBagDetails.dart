@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:foodrescue_app/Utils/Colors.dart';
 import 'package:foodrescue_app/controllers/home_controller.dart';
 import 'package:foodrescue_app/controllers/reservation_controller.dart';
+import 'package:foodrescue_app/controllers/favourites_controller.dart';
 import 'package:foodrescue_app/Utils/dark_light_mode.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -29,6 +30,7 @@ class SurpriseBagDetails extends StatefulWidget {
 class _SurpriseBagDetailsState extends State<SurpriseBagDetails> {
   final HomeController homeController = Get.find<HomeController>();
   final ReservationController reservationController = Get.find<ReservationController>();
+  final FavouritesController favouritesController = Get.put(FavouritesController());
   bool isReserving = false;
 
 
@@ -58,19 +60,34 @@ class _SurpriseBagDetailsState extends State<SurpriseBagDetails> {
               onPressed: () => Get.back(),
             ),
             actions: [
-              IconButton(
-                icon: Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(20),
+              Obx(() {
+                final bagId = widget.bagData["id"] ?? DateTime.now().millisecondsSinceEpoch.toString();
+                final isFav = favouritesController.isFavourite(bagId);
+
+                return IconButton(
+                  icon: Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        isFav ? Icons.favorite : Icons.favorite_border,
+                        color: isFav ? Colors.red : Colors.white,
+                      ),
+                    ),
                   ),
-                  child: Icon(Icons.favorite_border, color: Colors.white),
-                ),
-                onPressed: () {
-                  // Add to favorites functionality
-                },
-              ),
+                  onPressed: () {
+                    favouritesController.toggleFavourite(
+                      widget.bagData,
+                      widget.restaurantName,
+                      widget.restaurantImage,
+                      widget.restaurantAddress,
+                    );
+                  },
+                );
+              }),
             ],
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
