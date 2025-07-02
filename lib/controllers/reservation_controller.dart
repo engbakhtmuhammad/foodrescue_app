@@ -1,20 +1,71 @@
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:math';
 import '../config/app_config.dart';
+import '../models/surprise_bag_order_model.dart';
+import '../services/error_handling_service.dart';
+import '../services/payment_verification_service.dart';
 
 class ReservationController extends GetxController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  
+
   var isLoading = false.obs;
   var reservations = <Map<String, dynamic>>[].obs;
+  var orders = <SurpriseBagOrderModel>[].obs;
 
   @override
   void onInit() {
     super.onInit();
     loadUserReservations();
+    loadUserOrders();
+  }
+
+  // Computed properties for different order states
+  List<SurpriseBagOrderModel> get activeOrders => orders.where((order) =>
+    order.status == 'pending' || order.status == 'confirmed' || order.status == 'ready').toList();
+
+  List<SurpriseBagOrderModel> get completedOrders => orders.where((order) =>
+    order.status == 'completed').toList();
+
+  List<SurpriseBagOrderModel> get cancelledOrders => orders.where((order) =>
+    order.status == 'cancelled').toList();
+
+  // For backward compatibility with existing UI
+  List<Map<String, dynamic>> get activeReservations => activeOrders.map((order) => _orderToReservationMap(order)).toList();
+  List<Map<String, dynamic>> get completedReservations => completedOrders.map((order) => _orderToReservationMap(order)).toList();
+  List<Map<String, dynamic>> get cancelledReservations => cancelledOrders.map((order) => _orderToReservationMap(order)).toList();
+
+  // Convert order model to reservation map for backward compatibility
+  Map<String, dynamic> _orderToReservationMap(SurpriseBagOrderModel order) {
+    return {
+      'id': order.id,
+      'userId': order.userId,
+      'bagId': order.surpriseBagId,
+      'restaurantId': order.restaurantId,
+      'status': order.status,
+      'paymentStatus': order.paymentStatus,
+      'reservationTime': order.orderDate.toIso8601String(),
+      'pickupDate': order.pickupDate.toIso8601String().split('T')[0],
+      'pickupStartTime': order.pickupTimeSlot.split('-').first,
+      'pickupEndTime': order.pickupTimeSlot.split('-').last,
+      'price': order.discountedPrice.toString(),
+      'originalPrice': order.originalPrice.toString(),
+      'reservationCode': order.id.substring(0, 8).toUpperCase(),
+      'paymentMethod': order.paymentMethod,
+      'transactionId': order.paymentId,
+      'bagData': {
+        'title': order.surpriseBagTitle,
+        'restaurantName': order.restaurantName,
+        'discountedPrice': order.discountedPrice,
+        'originalPrice': order.originalPrice,
+      },
+      'restaurantData': {
+        'title': order.restaurantName,
+      },
+    };
   }
 
   Future<bool> reserveSurpriseBag({
@@ -52,7 +103,7 @@ class ReservationController extends GetxController {
       }
 
       // Generate reservation document reference first
-      final reservationRef = _firestore.collection(AppConfig.reservationsCollection).doc();
+      final reservationRef = _firestore.collection(AppConfig.surpriseBagOrdersCollection).doc();
 
       // Create reservation data using constants
       final reservationData = {
@@ -99,15 +150,16 @@ class ReservationController extends GetxController {
       
       return true;
     } catch (e) {
-      print("Error reserving surprise bag: $e");
-      Get.snackbar("Error", "Failed to reserve surprise bag. Please try again.");
+      final error = ErrorHandlingService.handleFirebaseError(e);
+      await ErrorHandlingService.recordError(e, StackTrace.current);
+      ErrorHandlingService.showErrorToUser(error);
       return false;
     } finally {
       isLoading.value = false;
     }
   }
 
-  // Reserve surprise bag with payment integration
+  // Reserve surprise bag with payment integration using new order model
   Future<bool> reserveSurpriseBagWithPayment({
     required String bagId,
     required String restaurantId,
@@ -125,6 +177,37 @@ class ReservationController extends GetxController {
         return false;
       }
 
+      // Get user data for the order
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      final userData = userDoc.data() ?? {};
+
+      // Check for fraudulent patterns
+      final totalAmount = double.tryParse(bagData[FieldConstants.bagDiscountedPrice]?.toString() ?? '0') ?? 0.0;
+      final isFraudulent = await PaymentVerificationService.checkFraudulentPatterns(
+        userId: user.uid,
+        amount: totalAmount,
+        paymentMethod: paymentMethod,
+      );
+
+      if (isFraudulent) {
+        Get.snackbar("Security Alert", "Order flagged for review. Please contact support.");
+        return false;
+      }
+
+      // Verify payment if transaction ID is provided
+      if (transactionId.isNotEmpty) {
+        final verificationResult = await PaymentVerificationService.verifyStripePayment(
+          paymentIntentId: transactionId,
+          expectedAmount: totalAmount,
+          orderId: '', // Will be set after order creation
+        );
+
+        if (!verificationResult['success']) {
+          Get.snackbar("Payment Error", verificationResult['error'] ?? 'Payment verification failed');
+          return false;
+        }
+      }
+
       // Check if bag is still available
       final bagDoc = await _firestore.collection(AppConfig.surpriseBagsCollection).doc(bagId).get();
       if (!bagDoc.exists) {
@@ -133,7 +216,6 @@ class ReservationController extends GetxController {
       }
 
       final bagInfo = bagDoc.data()!;
-      // Handle both new and legacy field names for quantity
       final currentQuantity = int.tryParse(
         bagInfo[FieldConstants.bagItemsLeft]?.toString() ??
         bagInfo[FieldConstants.bagQuantity]?.toString() ?? '0'
@@ -144,57 +226,87 @@ class ReservationController extends GetxController {
         return false;
       }
 
-      // Generate reservation document reference first
-      final reservationRef = _firestore.collection(AppConfig.reservationsCollection).doc();
+      // Create order using the new model
+      final now = DateTime.now();
+      final pickupDate = now.add(Duration(days: 1)); // Default to tomorrow
+      final pickupStartTime = bagData[FieldConstants.bagTodayPickupStart] ?? '18:00';
+      final pickupEndTime = bagData[FieldConstants.bagTodayPickupEnd] ?? '20:00';
 
-      // Create reservation data using constants with payment info
-      final reservationData = {
-        FieldConstants.reservationId: reservationRef.id,
-        FieldConstants.reservationUserId: user.uid,
-        FieldConstants.reservationBagId: bagId,
-        FieldConstants.reservationRestaurantId: restaurantId,
-        FieldConstants.reservationBagData: bagData,
-        FieldConstants.reservationRestaurantData: restaurantData,
-        FieldConstants.reservationStatus: FieldConstants.statusConfirmed,
-        FieldConstants.reservationTime: FieldValue.serverTimestamp(),
-        // Handle both new and legacy field names for pickup times
-        FieldConstants.reservationPickupStartTime: bagData[FieldConstants.bagTodayPickupStart] ??
-                                                   bagData[FieldConstants.bagPickupStartTime] ?? '18:00',
-        FieldConstants.reservationPickupEndTime: bagData[FieldConstants.bagTodayPickupEnd] ??
-                                                 bagData[FieldConstants.bagPickupEndTime] ?? '20:00',
-        FieldConstants.reservationPickupDate: DateTime.now().toIso8601String().split('T')[0],
-        FieldConstants.reservationPrice: bagData[FieldConstants.bagDiscountedPrice] ??
-                                        bagData['price'] ?? '9.99',
-        FieldConstants.reservationOriginalPrice: bagData[FieldConstants.bagOriginalPrice] ?? '29.99',
-        FieldConstants.reservationPaymentStatus: FieldConstants.paymentPaid, // Mark as paid
-        FieldConstants.reservationCode: _generateReservationCode(),
-        FieldConstants.reservationPaymentMethod: paymentMethod,
-        FieldConstants.reservationTransactionId: transactionId,
-      };
+      final order = SurpriseBagOrderModel(
+        id: '', // Will be set by Firestore
+        userId: user.uid,
+        userName: userData['name'] ?? user.displayName ?? 'Unknown User',
+        userEmail: userData['email'] ?? user.email ?? '',
+        userPhone: userData['mobile'] ?? user.phoneNumber ?? '',
+        surpriseBagId: bagId,
+        surpriseBagTitle: bagData['title'] ?? 'Surprise Bag',
+        restaurantId: restaurantId,
+        restaurantName: restaurantData['title'] ?? 'Unknown Restaurant',
+        originalPrice: double.tryParse(bagData[FieldConstants.bagOriginalPrice]?.toString() ?? '0') ?? 0.0,
+        discountedPrice: double.tryParse(bagData[FieldConstants.bagDiscountedPrice]?.toString() ?? '0') ?? 0.0,
+        totalAmount: double.tryParse(bagData[FieldConstants.bagDiscountedPrice]?.toString() ?? '0') ?? 0.0,
+        quantity: 1,
+        status: 'pending', // Will be confirmed by restaurant
+        paymentStatus: 'paid',
+        paymentMethod: paymentMethod,
+        paymentId: transactionId,
+        pickupDate: pickupDate,
+        pickupTimeSlot: '$pickupStartTime-$pickupEndTime',
+        pickupInstructions: bagData['pickupInstructions'] ?? '',
+        orderDate: now,
+        createdAt: now,
+        updatedAt: now,
+      );
 
-      // Save reservation using the reference we created
-      await reservationRef.set(reservationData);
+      // Save order to Firestore
+      final orderRef = await _firestore.collection(AppConfig.surpriseBagOrdersCollection).add(order.toMap());
 
-      // Update bag quantity using constants
+      // Update bag quantity
       await _firestore.collection(AppConfig.surpriseBagsCollection).doc(bagId).update({
         FieldConstants.bagItemsLeft: (currentQuantity - 1).toString(),
         FieldConstants.bagUpdatedAt: FieldValue.serverTimestamp(),
       });
 
-      // Reload user reservations
+      // Reload user orders and reservations
+      await loadUserOrders();
       await loadUserReservations();
 
       Get.snackbar(
         "Success",
-        "Surprise bag reserved and paid successfully! Your reservation code is ${reservationData[FieldConstants.reservationCode]}",
+        "Surprise bag reserved and paid successfully! Order ID: ${orderRef.id.substring(0, 8).toUpperCase()}",
         duration: Duration(seconds: 4),
       );
 
       return true;
     } catch (e) {
-      print("Error reserving surprise bag with payment: $e");
+      debugPrint("Error reserving surprise bag with payment: $e");
       Get.snackbar("Error", "Failed to reserve surprise bag. Please try again.");
       return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Load user orders using the new order model
+  Future<void> loadUserOrders() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
+
+      isLoading.value = true;
+
+      final querySnapshot = await _firestore
+          .collection(AppConfig.surpriseBagOrdersCollection)
+          .where('userId', isEqualTo: user.uid)
+          .orderBy('orderDate', descending: true)
+          .get();
+
+      orders.value = querySnapshot.docs.map((doc) =>
+        SurpriseBagOrderModel.fromFirestore(doc)).toList();
+
+    } catch (e) {
+      debugPrint("Error loading orders: $e");
+      Get.snackbar("Error", "Failed to load your orders");
     } finally {
       isLoading.value = false;
     }
@@ -206,7 +318,7 @@ class ReservationController extends GetxController {
       if (user == null) return;
 
       final querySnapshot = await _firestore
-          .collection(AppConfig.reservationsCollection)
+          .collection(AppConfig.surpriseBagOrdersCollection)
           .where(FieldConstants.reservationUserId, isEqualTo: user.uid)
           .orderBy(FieldConstants.reservationTime, descending: true)
           .get();
@@ -217,7 +329,7 @@ class ReservationController extends GetxController {
         return data;
       }).toList();
     } catch (e) {
-      print("Error loading reservations: $e");
+      debugPrint("Error loading reservations: $e");
     }
   }
 
@@ -264,8 +376,9 @@ class ReservationController extends GetxController {
       Get.snackbar("Success", "Reservation cancelled successfully");
       return true;
     } catch (e) {
-      print("Error cancelling reservation: $e");
-      Get.snackbar("Error", "Failed to cancel reservation. Please try again.");
+      final error = ErrorHandlingService.handleFirebaseError(e);
+      await ErrorHandlingService.recordError(e, StackTrace.current);
+      ErrorHandlingService.showErrorToUser(error);
       return false;
     } finally {
       isLoading.value = false;
@@ -287,8 +400,9 @@ class ReservationController extends GetxController {
       Get.snackbar("Success", "Marked as picked up successfully");
       return true;
     } catch (e) {
-      print("Error marking as picked up: $e");
-      Get.snackbar("Error", "Failed to update status. Please try again.");
+      final error = ErrorHandlingService.handleFirebaseError(e);
+      await ErrorHandlingService.recordError(e, StackTrace.current);
+      ErrorHandlingService.showErrorToUser(error);
       return false;
     } finally {
       isLoading.value = false;
@@ -312,20 +426,7 @@ class ReservationController extends GetxController {
     return reservations.where((reservation) => reservation['status'] == status).toList();
   }
 
-  // Get active reservations (confirmed)
-  List<Map<String, dynamic>> get activeReservations {
-    return getReservationsByStatus('confirmed');
-  }
-
-  // Get completed reservations (picked up)
-  List<Map<String, dynamic>> get completedReservations {
-    return getReservationsByStatus('picked_up');
-  }
-
-  // Get cancelled reservations
-  List<Map<String, dynamic>> get cancelledReservations {
-    return getReservationsByStatus('cancelled');
-  }
+  // Legacy getters removed - using the new order-based getters defined earlier
 
   // Check if user has already reserved a specific bag
   bool hasReservedBag(String bagId) {

@@ -109,7 +109,7 @@ class _NewHomePageState extends State<NewHomePage> {
                   ),
                   child: Image.asset("assets/livelocation.png",
                   color: orangeColor,
-                  height: MediaQuery.of(context).size.height / 25)
+                  height: MediaQuery.of(context).size.height / 45)
                 ),
                 SizedBox(width: 12),
                 Expanded(

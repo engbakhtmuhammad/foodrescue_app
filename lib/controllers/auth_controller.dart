@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/firebase_service.dart';
 import '../api/Data_save.dart';
+import '../services/realtime_sync_service.dart';
 
 class AuthController extends GetxController {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -87,6 +88,9 @@ class AuthController extends GetxController {
         // Save user data locally
         save("UserLogin", result["UserLogin"]);
         save("Firstuser", true);
+
+        // Initialize real-time sync
+        await RealtimeSyncService.initialize();
       }
 
       return result;
@@ -215,6 +219,9 @@ class AuthController extends GetxController {
   // Sign out
   Future<void> signOut() async {
     try {
+      // Dispose real-time sync
+      await RealtimeSyncService.dispose();
+
       await FirebaseService.signOut();
       // Clear local data
       getData.remove('UserLogin');
@@ -376,6 +383,9 @@ class AuthController extends GetxController {
         if (userDoc != null) {
           save("UserLogin", userDoc);
           save("Firstuser", true);
+
+          // Initialize real-time sync
+          await RealtimeSyncService.initialize();
 
           return {
             'ResponseCode': '200',

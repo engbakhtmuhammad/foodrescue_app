@@ -1,20 +1,19 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
-import 'package:http/http.dart' as http;
 import 'package:get/get.dart';
+import '../config/stripe_config.dart';
+import 'error_handling_service.dart';
 
 class StripeService {
-  static const String _publishableKey = 'pk_test_51234567890abcdef'; // Replace with your publishable key
-  static const String _secretKey = 'sk_test_51234567890abcdef'; // Replace with your secret key
-  static const String _baseUrl = 'https://api.stripe.com/v1';
+  static const String _publishableKey = StripeConfig.publishableKey;
 
   static Future<void> init() async {
     Stripe.publishableKey = _publishableKey;
     await Stripe.instance.applySettings();
   }
 
-  /// Create payment intent on backend (simulated)
+  /// Create payment intent (Mock implementation for testing)
+  /// In production, this should be done on your backend server
   static Future<Map<String, dynamic>> createPaymentIntent({
     required double amount,
     required String currency,
@@ -22,31 +21,22 @@ class StripeService {
     Map<String, dynamic>? metadata,
   }) async {
     try {
-      // Convert amount to cents
-      int amountInCents = (amount * 100).round();
+      // For testing purposes, create a mock payment intent
+      // In production, you would call your backend API
 
-      // In a real app, this would be a call to your backend
-      // For now, we'll simulate the backend call
-      final response = await _simulateBackendCall({
-        'amount': amountInCents,
+      await Future.delayed(Duration(seconds: 1)); // Simulate network delay
+
+      // Generate mock payment intent
+      final paymentIntentId = 'pi_test_${DateTime.now().millisecondsSinceEpoch}';
+      final clientSecret = '${paymentIntentId}_secret_${DateTime.now().microsecondsSinceEpoch}';
+
+      return {
+        'success': true,
+        'client_secret': clientSecret,
+        'payment_intent_id': paymentIntentId,
+        'amount': (amount * 100).round(),
         'currency': currency.toLowerCase(),
-        'customer': customerId,
-        'metadata': metadata ?? {},
-        'automatic_payment_methods': {'enabled': true},
-      });
-
-      if (response['success'] == true) {
-        return {
-          'success': true,
-          'client_secret': response['client_secret'],
-          'payment_intent_id': response['id'],
-        };
-      } else {
-        return {
-          'success': false,
-          'error': response['error'] ?? 'Failed to create payment intent',
-        };
-      }
+      };
     } catch (e) {
       return {
         'success': false,
@@ -55,7 +45,7 @@ class StripeService {
     }
   }
 
-  /// Process payment with Stripe
+  /// Process payment with Stripe (Mock implementation for testing)
   static Future<Map<String, dynamic>> processPayment({
     required double amount,
     required String currency,
@@ -63,124 +53,76 @@ class StripeService {
     Map<String, dynamic>? metadata,
   }) async {
     try {
-      // Step 1: Create payment intent
-      final paymentIntentResult = await createPaymentIntent(
-        amount: amount,
-        currency: currency,
-        metadata: metadata,
-      );
+      // For testing purposes, simulate payment processing
+      // In production, you would use real Stripe payment sheet
 
-      if (paymentIntentResult['success'] != true) {
-        return paymentIntentResult;
+      // Show a mock payment dialog
+      bool paymentConfirmed = await _showMockPaymentDialog(amount, currency);
+
+      if (!paymentConfirmed) {
+        return {
+          'success': false,
+          'error': 'Payment cancelled by user',
+        };
       }
 
-      // Step 2: Initialize payment sheet
-      await Stripe.instance.initPaymentSheet(
-        paymentSheetParameters: SetupPaymentSheetParameters(
-          paymentIntentClientSecret: paymentIntentResult['client_secret'],
-          merchantDisplayName: 'Food Rescue App',
-          style: ThemeMode.system,
-          billingDetails: billingDetails != null
-              ? BillingDetails(
-                  email: billingDetails['email'],
-                  name: billingDetails['name'],
-                  phone: billingDetails['phone'],
-                  address: billingDetails['address'] != null
-                      ? Address(
-                          city: billingDetails['address']['city'],
-                          country: billingDetails['address']['country'],
-                          line1: billingDetails['address']['line1'],
-                          line2: billingDetails['address']['line2'],
-                          postalCode: billingDetails['address']['postal_code'],
-                          state: billingDetails['address']['state'],
-                        )
-                      : null,
-                )
-              : null,
-        ),
-      );
+      // Simulate payment processing delay
+      await Future.delayed(Duration(seconds: 2));
 
-      // Step 3: Present payment sheet
-      await Stripe.instance.presentPaymentSheet();
-
-      // Step 4: Verify payment on backend (simulated)
-      final verificationResult = await _verifyPayment(
-        paymentIntentResult['payment_intent_id'],
-      );
+      // Generate mock payment result
+      final paymentIntentId = 'pi_test_${DateTime.now().millisecondsSinceEpoch}';
 
       return {
         'success': true,
-        'payment_intent_id': paymentIntentResult['payment_intent_id'],
-        'transaction_id': 'stripe_${paymentIntentResult['payment_intent_id']}',
+        'payment_intent_id': paymentIntentId,
+        'transaction_id': 'stripe_$paymentIntentId',
         'amount': amount,
         'currency': currency,
-        'status': verificationResult['status'],
-      };
-    } on StripeException catch (e) {
-      return {
-        'success': false,
-        'error': _handleStripeError(e),
-        'error_code': e.error.code,
+        'status': 'succeeded',
       };
     } catch (e) {
+      final error = ErrorHandlingService.handlePaymentError(e, paymentMethod: 'stripe');
+      await ErrorHandlingService.recordError(e, StackTrace.current);
       return {
         'success': false,
-        'error': 'Payment failed: ${e.toString()}',
+        'error': error.message,
       };
     }
   }
 
-  /// Simulate backend payment intent creation
-  static Future<Map<String, dynamic>> _simulateBackendCall(
-      Map<String, dynamic> data) async {
-    // Simulate network delay
-    await Future.delayed(Duration(seconds: 1));
-
-    // Simulate success/failure (90% success rate)
-    if (DateTime.now().millisecond % 10 == 0) {
-      return {
-        'success': false,
-        'error': 'Payment declined by bank',
-      };
-    }
-
-    // Generate mock payment intent
-    final paymentIntentId = 'pi_${DateTime.now().millisecondsSinceEpoch}';
-    final clientSecret = '${paymentIntentId}_secret_${DateTime.now().microsecondsSinceEpoch}';
-
-    return {
-      'success': true,
-      'id': paymentIntentId,
-      'client_secret': clientSecret,
-      'amount': data['amount'],
-      'currency': data['currency'],
-      'status': 'requires_payment_method',
-    };
+  /// Show mock payment dialog for testing
+  static Future<bool> _showMockPaymentDialog(double amount, String currency) async {
+    return await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('Mock Stripe Payment'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Amount: \$${amount.toStringAsFixed(2)} $currency'),
+            SizedBox(height: 16),
+            Text('This is a test payment. In production, this would show the real Stripe payment sheet.'),
+            SizedBox(height: 16),
+            Text('Test Card: 4242 4242 4242 4242'),
+            Text('Expiry: 12/34 | CVC: 123'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Get.back(result: true),
+            child: Text('Pay Now'),
+          ),
+        ],
+      ),
+    ) ?? false;
   }
 
-  /// Verify payment on backend (simulated)
-  static Future<Map<String, dynamic>> _verifyPayment(String paymentIntentId) async {
-    // Simulate backend verification
-    await Future.delayed(Duration(milliseconds: 500));
 
-    return {
-      'success': true,
-      'status': 'succeeded',
-      'payment_intent_id': paymentIntentId,
-    };
-  }
 
-  /// Handle Stripe errors with user-friendly messages
-  static String _handleStripeError(StripeException error) {
-    // Use the error message directly or provide a generic message
-    final errorMessage = error.error.localizedMessage;
-    if (errorMessage != null && errorMessage.isNotEmpty) {
-      return errorMessage;
-    }
 
-    // Fallback to generic error message
-    return 'Payment failed. Please try again with a different payment method.';
-  }
 
   /// Create customer (for future use)
   static Future<Map<String, dynamic>> createCustomer({

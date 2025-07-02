@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import '../config/app_config.dart';
 
 class FavouritesController extends GetxController {
@@ -41,7 +42,7 @@ class FavouritesController extends GetxController {
       }).toList();
 
     } catch (e) {
-      print('Error loading favourites: $e');
+      debugPrint('Error loading favourites: $e');
       Get.snackbar(
         "Error",
         "Failed to load favourites",
@@ -108,7 +109,7 @@ class FavouritesController extends GetxController {
       );
 
     } catch (e) {
-      print('Error adding favourite: $e');
+      debugPrint('Error adding favourite: $e');
       Get.snackbar(
         "Error",
         "Failed to add to favourites",
@@ -134,7 +135,7 @@ class FavouritesController extends GetxController {
       favourites.removeWhere((item) => item['id'] == bagId);
 
     } catch (e) {
-      print('Error removing favourite: $e');
+      debugPrint('Error removing favourite: $e');
       Get.snackbar(
         "Error",
         "Failed to remove from favourites",
@@ -183,7 +184,7 @@ class FavouritesController extends GetxController {
       favourites.clear();
 
     } catch (e) {
-      print('Error clearing favourites: $e');
+      debugPrint('Error clearing favourites: $e');
       Get.snackbar(
         "Error",
         "Failed to clear favourites",
@@ -200,4 +201,111 @@ class FavouritesController extends GetxController {
 
   /// Check if favourites list is not empty
   bool get isNotEmpty => favourites.isNotEmpty;
+
+  /// Get favourite surprise bags with updated availability
+  List<Map<String, dynamic>> getFavouriteSurpriseBags() {
+    return favourites.where((item) =>
+      item['type'] == 'surprise_bag' || item['title'] != null
+    ).toList();
+  }
+
+  /// Sync favorites with current surprise bag availability
+  Future<void> syncFavoritesWithAvailability(List<Map<String, dynamic>> currentBags) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
+
+      bool hasUpdates = false;
+      final updatedFavorites = <Map<String, dynamic>>[];
+
+      for (final favorite in favourites) {
+        final bagId = favorite['id'];
+        final currentBag = currentBags.firstWhere(
+          (bag) => bag['id'] == bagId,
+          orElse: () => {},
+        );
+
+        if (currentBag.isNotEmpty) {
+          // Update favorite with current bag data
+          final updatedFavorite = {
+            ...favorite,
+            'isAvailable': currentBag['isAvailable'] ?? false,
+            'itemsLeft': currentBag['itemsLeft'] ?? 0,
+            'status': currentBag['status'] ?? 'inactive',
+            'discountedPrice': currentBag['discountedPrice'],
+            'originalPrice': currentBag['originalPrice'],
+            'lastSyncAt': FieldValue.serverTimestamp(),
+          };
+
+          updatedFavorites.add(updatedFavorite);
+
+          // Update in Firebase if availability changed
+          if (favorite['isAvailable'] != currentBag['isAvailable'] ||
+              favorite['itemsLeft'] != currentBag['itemsLeft']) {
+            await _firestore
+                .collection('users')
+                .doc(user.uid)
+                .collection('favourites')
+                .doc(bagId)
+                .update({
+              'isAvailable': currentBag['isAvailable'] ?? false,
+              'itemsLeft': currentBag['itemsLeft'] ?? 0,
+              'status': currentBag['status'] ?? 'inactive',
+              'discountedPrice': currentBag['discountedPrice'],
+              'originalPrice': currentBag['originalPrice'],
+              'lastSyncAt': FieldValue.serverTimestamp(),
+            });
+            hasUpdates = true;
+          }
+        } else {
+          // Bag no longer exists, mark as unavailable
+          final updatedFavorite = {
+            ...favorite,
+            'isAvailable': false,
+            'itemsLeft': 0,
+            'status': 'inactive',
+            'lastSyncAt': FieldValue.serverTimestamp(),
+          };
+          updatedFavorites.add(updatedFavorite);
+
+          if (favorite['isAvailable'] != false) {
+            await _firestore
+                .collection('users')
+                .doc(user.uid)
+                .collection('favourites')
+                .doc(bagId)
+                .update({
+              'isAvailable': false,
+              'itemsLeft': 0,
+              'status': 'inactive',
+              'lastSyncAt': FieldValue.serverTimestamp(),
+            });
+            hasUpdates = true;
+          }
+        }
+      }
+
+      if (hasUpdates) {
+        favourites.value = updatedFavorites;
+      }
+    } catch (e) {
+      debugPrint('Error syncing favorites: $e');
+    }
+  }
+
+  /// Get count of available favorite bags
+  int get availableFavoritesCount {
+    return favourites.where((item) =>
+      item['isAvailable'] == true &&
+      (item['itemsLeft'] ?? 0) > 0
+    ).length;
+  }
+
+  /// Get only available favorite bags
+  List<Map<String, dynamic>> get availableFavorites {
+    return favourites.where((item) =>
+      item['isAvailable'] == true &&
+      (item['itemsLeft'] ?? 0) > 0
+    ).toList();
+  }
 }

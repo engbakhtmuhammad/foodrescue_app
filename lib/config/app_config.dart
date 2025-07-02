@@ -30,6 +30,7 @@ class AppConfig {
   static const String appSettingsCollection = "settings";
   static const String surpriseBagsCollection = "surprise_bags";
   static const String reservationsCollection = "reservations";
+  static const String surpriseBagOrdersCollection = "surprise_bag_orders";
   static const String reviewsCollection = "reviews";
   static const String ordersCollection = "orders";
 

@@ -1,7 +1,147 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import '../config/app_config.dart';
 
 class NotificationService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  static final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+  static final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  // Initialize FCM
+  static Future<void> initializeFCM() async {
+    try {
+      // Request permission
+      NotificationSettings settings = await _firebaseMessaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
+      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+        debugPrint('User granted notification permission');
+
+        // Get and save FCM token
+        String? token = await _firebaseMessaging.getToken();
+        if (token != null) {
+          await _saveFCMToken(token);
+        }
+
+        // Listen for token refresh
+        _firebaseMessaging.onTokenRefresh.listen(_saveFCMToken);
+
+        // Configure message handlers
+        _configureMessageHandlers();
+      }
+    } catch (e) {
+      debugPrint('Error initializing FCM: $e');
+    }
+  }
+
+  // Save FCM token to user document
+  static Future<void> _saveFCMToken(String token) async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        await _firestore.collection('users').doc(user.uid).update({
+          'fcmToken': token,
+          'lastTokenUpdate': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      debugPrint('Error saving FCM token: $e');
+    }
+  }
+
+  // Configure message handlers
+  static void _configureMessageHandlers() {
+    // Handle foreground messages
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      if (message.notification != null) {
+        _showInAppNotification(message);
+      }
+    });
+
+    // Handle background message taps
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
+
+    // Handle terminated state message taps
+    _firebaseMessaging.getInitialMessage().then((message) {
+      if (message != null) {
+        _handleNotificationTap(message);
+      }
+    });
+  }
+
+  // Show in-app notification
+  static void _showInAppNotification(RemoteMessage message) {
+    Get.snackbar(
+      message.notification?.title ?? 'Notification',
+      message.notification?.body ?? '',
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: Colors.blue.withValues(alpha: 0.9),
+      colorText: Colors.white,
+      duration: Duration(seconds: 4),
+    );
+  }
+
+  // Handle notification tap
+  static void _handleNotificationTap(RemoteMessage message) {
+    final type = message.data['type'];
+    switch (type) {
+      case 'order_status':
+        Get.toNamed('/reservations');
+        break;
+      default:
+        break;
+    }
+  }
+
+  // Send order status notification
+  static Future<void> sendOrderStatusNotification({
+    required String userId,
+    required String orderId,
+    required String status,
+    required String restaurantName,
+    required String bagTitle,
+  }) async {
+    String title = '';
+    String body = '';
+
+    switch (status) {
+      case 'confirmed':
+        title = 'Order Confirmed!';
+        body = 'Your order for $bagTitle from $restaurantName has been confirmed.';
+        break;
+      case 'ready':
+        title = 'Order Ready!';
+        body = 'Your $bagTitle from $restaurantName is ready for pickup.';
+        break;
+      case 'completed':
+        title = 'Order Completed';
+        body = 'Thank you for picking up your order from $restaurantName!';
+        break;
+      case 'cancelled':
+        title = 'Order Cancelled';
+        body = 'Your order from $restaurantName has been cancelled.';
+        break;
+    }
+
+    await createNotification(
+      userId: userId,
+      title: title,
+      message: body,
+      type: 'order_status',
+      data: {
+        'orderId': orderId,
+        'status': status,
+        'restaurantName': restaurantName,
+        'bagTitle': bagTitle,
+      },
+    );
+  }
 
   // Get user notifications
   static Future<Map<String, dynamic>> getNotifications({

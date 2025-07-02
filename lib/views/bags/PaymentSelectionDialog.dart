@@ -33,11 +33,34 @@ class _PaymentSelectionDialogState extends State<PaymentSelectionDialog> {
   final PaymentController paymentController = Get.find<PaymentController>();
   String selectedPaymentMethod = '';
   bool isProcessingPayment = false;
+  double walletBalance = 0.0;
+  bool isLoadingWallet = true;
 
   @override
   void initState() {
     super.initState();
     paymentController.getPaymentGateways();
+    _loadWalletBalance();
+  }
+
+  void _loadWalletBalance() async {
+    try {
+      var result = await paymentController.getWalletReport();
+      if (result['Result'] == 'true') {
+        setState(() {
+          walletBalance = (result['WalletData']['current_balance'] ?? 0.0).toDouble();
+          isLoadingWallet = false;
+        });
+      } else {
+        setState(() {
+          isLoadingWallet = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        isLoadingWallet = false;
+      });
+    }
   }
 
   void _processPayment(String paymentMethod) async {
@@ -95,27 +118,196 @@ class _PaymentSelectionDialogState extends State<PaymentSelectionDialog> {
   }
 
   Future<bool> _processWalletPayment() async {
-    // Simulate wallet payment processing
-    await Future.delayed(Duration(seconds: 2));
-    
-    // Check if user has sufficient wallet balance
-    var result = await paymentController.getWalletReport();
-    if (result['Result'] == 'true') {
-      double walletBalance = (result['WalletData']['current_balance'] ?? 0.0).toDouble();
-      if (walletBalance >= widget.amount) {
-        // Deduct from wallet
-        var deductResult = await paymentController.updateWallet(
-          amount: widget.amount,
-          type: 'debit',
-          description: 'Surprise bag reservation payment',
-        );
-        return deductResult['Result'] == 'true';
+    try {
+      // Show loading
+      Get.dialog(
+        Center(
+          child: Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(color: orangeColor),
+                SizedBox(height: 16),
+                Text('Processing wallet payment...'),
+              ],
+            ),
+          ),
+        ),
+        barrierDismissible: false,
+      );
+
+      // Check if user has sufficient wallet balance
+      var result = await paymentController.getWalletReport();
+
+      // Close loading dialog
+      Get.back();
+
+      if (result['Result'] == 'true') {
+        double walletBalance = (result['WalletData']['current_balance'] ?? 0.0).toDouble();
+
+        if (walletBalance >= widget.amount) {
+          // Show confirmation dialog
+          bool confirmed = await _showWalletConfirmationDialog(walletBalance);
+
+          if (!confirmed) return false;
+
+          // Show processing dialog again
+          Get.dialog(
+            Center(
+              child: Container(
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(color: orangeColor),
+                    SizedBox(height: 16),
+                    Text('Deducting from wallet...'),
+                  ],
+                ),
+              ),
+            ),
+            barrierDismissible: false,
+          );
+
+          // Deduct from wallet
+          var deductResult = await paymentController.updateWallet(
+            amount: widget.amount,
+            type: 'debit',
+            description: 'Surprise bag reservation - ${widget.reservationData['bagData']['title']}',
+          );
+
+          // Close loading dialog
+          Get.back();
+
+          if (deductResult['Result'] == 'true') {
+            Get.snackbar(
+              "Payment Successful",
+              "Payment deducted from wallet successfully!",
+              backgroundColor: Colors.green,
+              colorText: Colors.white,
+            );
+            return true;
+          } else {
+            Get.snackbar(
+              "Payment Failed",
+              deductResult['ResponseMsg'] ?? 'Failed to deduct from wallet',
+              backgroundColor: Colors.red,
+              colorText: Colors.white,
+            );
+            return false;
+          }
+        } else {
+          // Show insufficient balance dialog with top-up option
+          await _showInsufficientBalanceDialog(walletBalance);
+          return false;
+        }
       } else {
-        Get.snackbar("Insufficient Balance", "Please add money to your wallet or use another payment method");
+        Get.snackbar(
+          "Wallet Error",
+          result['ResponseMsg'] ?? 'Failed to get wallet balance',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
         return false;
       }
+    } catch (e) {
+      // Close loading dialog if still open
+      if (Get.isDialogOpen ?? false) {
+        Get.back();
+      }
+
+      Get.snackbar(
+        "Wallet Error",
+        "An error occurred: ${e.toString()}",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return false;
     }
-    return false;
+  }
+
+  Future<bool> _showWalletConfirmationDialog(double walletBalance) async {
+    return await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('Confirm Wallet Payment'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Amount to pay: \$${widget.amount.toStringAsFixed(2)}'),
+            Text('Current balance: \$${walletBalance.toStringAsFixed(2)}'),
+            Text('Remaining balance: \$${(walletBalance - widget.amount).toStringAsFixed(2)}'),
+            SizedBox(height: 16),
+            Text('Confirm payment from wallet?'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Get.back(result: true),
+            style: ElevatedButton.styleFrom(backgroundColor: orangeColor),
+            child: Text('Confirm Payment'),
+          ),
+        ],
+      ),
+    ) ?? false;
+  }
+
+  Future<void> _showInsufficientBalanceDialog(double walletBalance) async {
+    double shortfall = widget.amount - walletBalance;
+
+    await Get.dialog(
+      AlertDialog(
+        title: Text('Insufficient Wallet Balance'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Required: \$${widget.amount.toStringAsFixed(2)}'),
+            Text('Available: \$${walletBalance.toStringAsFixed(2)}'),
+            Text('Shortfall: \$${shortfall.toStringAsFixed(2)}'),
+            SizedBox(height: 16),
+            Text('Please add money to your wallet or use another payment method.'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Get.back();
+              _navigateToWalletTopUp(shortfall);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: orangeColor),
+            child: Text('Add Money'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _navigateToWalletTopUp(double suggestedAmount) {
+    // Navigate to wallet top-up screen
+    // You can implement this based on your existing wallet top-up screen
+    Get.snackbar(
+      "Add Money",
+      "Please go to Wallet section to add money. Suggested amount: \$${suggestedAmount.toStringAsFixed(2)}",
+      backgroundColor: orangeColor,
+      colorText: Colors.white,
+      duration: Duration(seconds: 5),
+    );
   }
 
   Future<bool> _processStripePayment() async {

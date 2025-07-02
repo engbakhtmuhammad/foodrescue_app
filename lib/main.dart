@@ -17,6 +17,9 @@ import 'controllers/payment_controller.dart';
 import 'controllers/favourites_controller.dart';
 import 'services/stripe_service.dart';
 import 'services/razorpay_service.dart';
+import 'services/error_handling_service.dart';
+import 'services/notification_service.dart';
+import 'services/realtime_sync_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,12 +28,20 @@ void main() async {
 );
   await GetStorage.init();
 
-  // Initialize payment services
+  // Initialize services
   try {
+    // Initialize error handling
+    await ErrorHandlingService.initialize();
+
+    // Initialize payment services
     await StripeService.init();
     RazorPayService.init();
+
+    // Initialize notifications
+    await NotificationService.initializeFCM();
+
   } catch (e) {
-    print('Payment services initialization failed: $e');
+    debugPrint('Services initialization failed: $e');
   }
 
   // Initialize controllers
