@@ -110,14 +110,32 @@ class _SurpriseBagDetailsState extends State<SurpriseBagDetails> {
                       decoration: BoxDecoration(
                         color: _getAvailabilityColor(),
                         borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 4,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
                       ),
-                      child: Text(
-                        _getAvailabilityText(),
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _getAvailabilityIcon(),
+                            color: Colors.white,
+                            size: 14,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            _getAvailabilityText(),
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -528,6 +546,13 @@ class _SurpriseBagDetailsState extends State<SurpriseBagDetails> {
     if (quantity > 5) return "Available";
     if (quantity > 0) return "Few left";
     return "Sold out";
+  }
+
+  IconData _getAvailabilityIcon() {
+    int quantity = int.tryParse(widget.bagData["itemsLeft"]?.toString() ?? "0") ?? 0;
+    if (quantity > 5) return Icons.check_circle;
+    if (quantity > 0) return Icons.access_time;
+    return Icons.cancel;
   }
 
   void _reserveBag() async {

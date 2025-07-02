@@ -149,10 +149,10 @@ class SurpriseBagModel {
       originalPrice: (data['originalPrice'] ?? 0.0).toDouble(),
       discountedPrice: (data['discountedPrice'] ?? 0.0).toDouble(),
       discountPercentage: (data['discountPercentage'] ?? 0.0).toDouble(),
-      itemsLeft: data['itemsLeft'] ?? 0,
-      totalItems: data['totalItems'] ?? 0,
+      itemsLeft: int.tryParse(data['itemsLeft']?.toString() ?? '0') ?? 0,
+      totalItems: int.tryParse(data['totalItems']?.toString() ?? '0') ?? 0,
       category: data['category'] ?? '',
-      isAvailable: data['isAvailable'] ?? true,
+      isAvailable: _parseBool(data['isAvailable']) ?? true,
       status: data['status'] ?? 'active',
       pickupType: data['pickupType'] ?? 'today',
       todayPickupStart: data['todayPickupStart'] ?? '',
@@ -166,8 +166,8 @@ class SurpriseBagModel {
       pickupLongitude: (data['pickupLongitude'] ?? 0.0).toDouble(),
       possibleItems: _parseStringList(data['possibleItems']),
       allergens: _parseStringList(data['allergens']),
-      isVegetarian: data['isVegetarian'] ?? false,
-      isVegan: data['isVegan'] ?? false,
+      isVegetarian: _parseBool(data['isVegetarian']) ?? false,
+      isVegan: _parseBool(data['isVegan']) ?? false,
       isGlutenFree: data['isGlutenFree'] ?? false,
       dietaryInfo: data['dietaryInfo'] ?? '',
       rating: (data['rating'] ?? 0.0).toDouble(),
@@ -369,4 +369,14 @@ class SurpriseBagModel {
 
   @override
   int get hashCode => id.hashCode;
+
+  // Helper method to parse boolean values from Firebase
+  static bool? _parseBool(dynamic value) {
+    if (value == null) return null;
+    if (value is bool) return value;
+    if (value is String) {
+      return value.toLowerCase() == 'true';
+    }
+    return null;
+  }
 }

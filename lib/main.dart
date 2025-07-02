@@ -13,6 +13,7 @@ import 'config/app_config.dart';
 import 'controllers/auth_controller.dart';
 import 'controllers/home_controller.dart';
 import 'controllers/reservation_controller.dart';
+import 'controllers/payment_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,6 +26,7 @@ void main() async {
   Get.put(AuthController());
   Get.put(HomeController());
   Get.put(ReservationController());
+  Get.put(PaymentController());
 
   initPlatformState();
   runApp(

@@ -1,7 +1,6 @@
 // ignore_for_file: file_names, prefer_const_constructors, sized_box_for_whitespace, unused_import, sort_child_properties_last, non_constant_identifier_names, prefer_const_literals_to_create_immutables, unnecessary_brace_in_string_interps, avoid_print, prefer_typing_uninitialized_variables, unused_local_variable, unused_field, prefer_final_fields, prefer_interpolation_to_compose_strings, avoid_types_as_parameter_names
 // ignore_for_file: camel_case_types, use_key_in_widget_constructors, annotate_overrides, unused_element, avoid_unnecessary_containers,  deprecated_member_use
-
-
+// Do not use this page for now as we are using newHomePage.dart for now to achieve the TGTG
 import 'dart:convert';
 import 'dart:io';
 
@@ -84,11 +83,54 @@ class _HomePageState extends State<HomePage> {
       // Controller will load ALL restaurants automatically without location requirements
       print("HomePage initState completed - controller will load ALL restaurants");
     });
+    // Initialize filtered lists
+    _initializeFilteredLists();
     // plugin.initialize(publicKey: AppUrl.publicKeyTest);
     _razorpay = Razorpay();
     _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
     _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
     _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+  }
+
+  void _initializeFilteredLists() {
+    // Initialize with all data
+    filteredRestaurants = List.from(hData.allrest);
+    filteredSurpriseBags = List.from(hData.surpriseBags);
+  }
+
+  void _filterByCategory() {
+    if (selectedCategory == "all") {
+      filteredRestaurants = List.from(hData.allrest);
+      filteredSurpriseBags = List.from(hData.surpriseBags);
+    } else {
+      // Filter restaurants by cuisine
+      filteredRestaurants = hData.allrest.where((restaurant) {
+        if (restaurant["cuisines"] != null) {
+          List<String> cuisines = restaurant["cuisines"].toString().split(',');
+          return cuisines.any((cuisine) =>
+            cuisine.trim().toLowerCase().contains(selectedCategory.toLowerCase())
+          );
+        }
+        return false;
+      }).cast<Map<String, dynamic>>().toList();
+
+      // Filter surprise bags by restaurant cuisine
+      filteredSurpriseBags = hData.surpriseBags.where((bag) {
+        final restaurant = hData.allrest.firstWhere(
+          (r) => r["id"] == bag["restaurantId"],
+          orElse: () => {},
+        );
+
+        if (restaurant.isNotEmpty && restaurant["cuisines"] != null) {
+          List<String> cuisines = restaurant["cuisines"].toString().split(',');
+          return cuisines.any((cuisine) =>
+            cuisine.trim().toLowerCase().contains(selectedCategory.toLowerCase())
+          );
+        }
+        return false;
+      }).cast<Map<String, dynamic>>().toList();
+    }
+    setState(() {});
   }
 
   void _handlePaymentSuccess(PaymentSuccessResponse response) {
@@ -126,6 +168,11 @@ class _HomePageState extends State<HomePage> {
   int currentindex = 0;
   bool selected = true;
   // Plan-related variables removed as requested
+
+  // Category filtering variables
+  String selectedCategory = "all";
+  List<Map<String, dynamic>> filteredRestaurants = [];
+  List<Map<String, dynamic>> filteredSurpriseBags = [];
 
   var first;
   var address;
@@ -698,7 +745,7 @@ class _HomePageState extends State<HomePage> {
                                             scrollDirection: Axis.horizontal,
                                             shrinkWrap: true,
                                             padding: EdgeInsets.zero,
-                                            itemCount: hData.latestrest.length,
+                                            itemCount: filteredRestaurants.length,
                                             itemBuilder: (BuildContext context,
                                                 int index) {
                                               return InkWell(
@@ -706,7 +753,7 @@ class _HomePageState extends State<HomePage> {
                                                   setState(() {
                                                     currentindex = index;
                                                   });
-                                                  String? restaurantId = hData.latestrest[index]["id"]?.toString();
+                                                  String? restaurantId = filteredRestaurants[index]["id"]?.toString();
                                                   if (restaurantId != null && restaurantId.isNotEmpty) {
                                                     Get.to(() => HotelDetails(detailId: restaurantId));
                                                   } else {
@@ -754,7 +801,7 @@ class _HomePageState extends State<HomePage> {
                                                               placeholderFit:
                                                               BoxFit.fill,
                                                               // placeholderScale: 1.0,
-                                                              image: hData.latestrest[index]["image"]?.toString() ?? "https://picsum.photos/300/200",
+                                                              image: filteredRestaurants[index]["image"]?.toString() ?? "https://picsum.photos/300/200",
                                                               fit: BoxFit.cover,
                                                             ),
                                                             Positioned(
@@ -809,10 +856,10 @@ class _HomePageState extends State<HomePage> {
                                                                                   dateFormat ==
                                                                                       "Sunday") {
                                                                                 currentdiscount =
-                                                                                hData.latestrest[index]["fridaySundayOffer"]?.toString() ?? "0";
+                                                                                filteredRestaurants[index]["fridaySundayOffer"]?.toString() ?? "0";
                                                                               } else {
                                                                                 currentdiscount =
-                                                                                hData.latestrest[index]["mondayThursdayOffer"]?.toString() ?? "0";
+                                                                                filteredRestaurants[index]["mondayThursdayOffer"]?.toString() ?? "0";
                                                                               }
 
                                                                               return Text(
@@ -848,7 +895,7 @@ class _HomePageState extends State<HomePage> {
                                                           height:
                                                           Get.height * 0.02),
                                                       Text(
-                                                        hData.latestrest[index]["title"]?.toString() ?? "Restaurant",
+                                                        filteredRestaurants[index]["title"]?.toString() ?? "Restaurant",
                                                         style: TextStyle(
                                                             color:  notifier.textColor,
                                                             fontFamily:
@@ -863,7 +910,7 @@ class _HomePageState extends State<HomePage> {
                                                               color: yelloColor,
                                                               size: 22),
                                                           Text(
-                                                            hData.latestrest[index]["rating"]?.toString() ?? "0.0",
+                                                            filteredRestaurants[index]["rating"]?.toString() ?? "0.0",
                                                             style: TextStyle(
                                                                 color: greycolor,
                                                                 fontFamily:
@@ -881,7 +928,7 @@ class _HomePageState extends State<HomePage> {
                                                               width: Get.width *
                                                                   0.02),
                                                           Text(
-                                                            hData.latestrest[index]["fullAddress"]?.toString() ?? "No address",
+                                                            filteredRestaurants[index]["fullAddress"]?.toString() ?? "No address",
                                                             style: TextStyle(
                                                                 color: greycolor,
                                                                 fontFamily:
@@ -893,7 +940,7 @@ class _HomePageState extends State<HomePage> {
                                                       SizedBox(
                                                         width: Get.width * 0.45,
                                                         child: Text(
-                                                            hData.latestrest[index]["shortDescription"]?.toString() ?? "No description",
+                                                            filteredRestaurants[index]["shortDescription"]?.toString() ?? "No description",
                                                             style: TextStyle(
                                                                 color: greycolor,
                                                                 fontFamily:
@@ -1239,32 +1286,54 @@ class _HomePageState extends State<HomePage> {
                                             scrollDirection: Axis.horizontal,
                                             shrinkWrap: true,
                                             padding: EdgeInsets.zero,
-                                            itemCount: hData.CuisineList.length,
+                                            itemCount: hData.CuisineList.length + 1, // +1 for "All" category
                                             itemBuilder: (BuildContext context,
                                                 int index) {
+                                              String cuisineId;
+                                              String cuisineTitle;
+                                              String imageUrl;
+
+                                              if (index == 0) {
+                                                // First item is "All" category
+                                                cuisineId = "all";
+                                                cuisineTitle = "All";
+                                                imageUrl = "https://picsum.photos/100/100";
+                                              } else {
+                                                // Regular cuisine categories
+                                                int cuisineIndex = index - 1;
+                                                cuisineId = hData.CuisineList[cuisineIndex]["id"]?.toString() ?? "all";
+                                                cuisineTitle = hData.CuisineList[cuisineIndex]["title"]?.toString() ?? "All";
+                                                imageUrl = hData.CuisineList[cuisineIndex]["image"]?.toString() ?? "https://picsum.photos/100/100";
+                                              }
+
+                                              bool isSelected = selectedCategory == cuisineId;
+
                                               return InkWell(
                                                 onTap: () {
-                                                  String? cuisineTitle = hData.CuisineList[index]["title"]?.toString();
-                                                  String? cuisineId = hData.CuisineList[index]["id"]?.toString();
-                                                  if (cuisineTitle != null && cuisineId != null) {
-                                                    Get.to(() => Cuisines(
-                                                      title: cuisineTitle,
-                                                      hotelid: cuisineId,
-                                                    ));
-                                                  } else {
-                                                    Get.snackbar("Error", "Cuisine data not found");
-                                                  }
+                                                  setState(() {
+                                                    selectedCategory = cuisineId;
+                                                  });
+                                                  _filterByCategory();
                                                 },
                                                 child: Container(
                                                   width: Get.width * 0.25,
                                                   child: Column(
                                                     children: [
-                                                      CircleAvatar(
-                                                          backgroundImage:
-                                                          NetworkImage(hData.CuisineList[index]["image"]?.toString() ?? "https://picsum.photos/100/100"),
-                                                          radius: 35,
-                                                          backgroundColor:
-                                                          transparent),
+                                                      Container(
+                                                        decoration: BoxDecoration(
+                                                          shape: BoxShape.circle,
+                                                          border: isSelected ? Border.all(
+                                                            color: orangeColor,
+                                                            width: 3,
+                                                          ) : null,
+                                                        ),
+                                                        child: CircleAvatar(
+                                                            backgroundImage:
+                                                            NetworkImage(imageUrl),
+                                                            radius: 35,
+                                                            backgroundColor:
+                                                            transparent),
+                                                      ),
                                                       SizedBox(
                                                           height:
                                                           Get.height * 0.01),
@@ -1272,12 +1341,12 @@ class _HomePageState extends State<HomePage> {
                                                         width: Get.width * 0.23,
                                                         child: Center(
                                                           child: Text(
-                                                            hData.CuisineList[index]["title"]?.toString() ?? "Cuisine",
+                                                            cuisineTitle,
                                                             style: TextStyle(
                                                                 fontSize: 13,
-                                                                color: BlackColor,
-                                                                fontFamily:
-                                                                "Gilroy Medium"),
+                                                                color: isSelected ? orangeColor : BlackColor,
+                                                                fontFamily: isSelected ? "Gilroy Bold" : "Gilroy Medium"),
+                                                            textAlign: TextAlign.center,
                                                           ),
                                                         ),
                                                       ),

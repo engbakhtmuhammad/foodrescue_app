@@ -84,11 +84,11 @@ class _BottomBarState extends State<BottomBar> {
                   height: MediaQuery.of(context).size.height / 35),
               label: 'Home'.tr),
           BottomNavigationBarItem(
-              icon: Icon(Icons.search,
+              icon: Image.asset("assets/browse.png",
                   color: selectedIndex == 1
                       ? orangeColor
                       : greycolor.withOpacity(0.5),
-                  size: MediaQuery.of(context).size.height / 35),
+                  height: MediaQuery.of(context).size.height / 35),
               label: 'Search'.tr),
           BottomNavigationBarItem(
               icon: Image.asset("assets/nearby.png",

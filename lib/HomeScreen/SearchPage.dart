@@ -5,6 +5,7 @@ import 'package:foodrescue_app/Utils/Colors.dart';
 import 'package:foodrescue_app/controllers/home_controller.dart';
 import 'package:foodrescue_app/Utils/dark_light_mode.dart';
 import 'package:foodrescue_app/HomeScreen/SurpriseBagDetails.dart';
+import 'package:foodrescue_app/HomeScreen/Hotel_Details.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -28,11 +29,29 @@ class _SearchPageState extends State<SearchPage> {
   Set<Marker> markers = {};
   LatLng currentLocation = LatLng(37.7749, -122.4194); // Default to San Francisco
   String selectedCategory = "all";
+  bool _isMapReady = false;
 
   @override
   void initState() {
     super.initState();
     _initializeData();
+  }
+
+  @override
+  void dispose() {
+    // Clean up map resources
+    _isMapReady = false;
+    if (mapController != null) {
+      try {
+        mapController?.dispose();
+      } catch (e) {
+        // Ignore disposal errors
+      }
+      mapController = null;
+    }
+    markers.clear();
+    searchController.dispose();
+    super.dispose();
   }
 
   void _filterByCategory() {
@@ -69,8 +88,10 @@ class _SearchPageState extends State<SearchPage> {
     }
 
     // Update map markers when category changes
-    if (!isListView) {
-      _updateMapMarkers();
+    if (!isListView && _isMapReady) {
+      Future.delayed(Duration(milliseconds: 100), () {
+        _updateMapMarkers();
+      });
     }
 
     setState(() {});
@@ -135,8 +156,10 @@ class _SearchPageState extends State<SearchPage> {
       filteredRestaurants = allRestaurants;
 
       // Update map markers when search results change
-      if (!isListView) {
-        _updateMapMarkers();
+      if (!isListView && _isMapReady) {
+        Future.delayed(Duration(milliseconds: 100), () {
+          _updateMapMarkers();
+        });
       }
     });
   }
@@ -226,9 +249,11 @@ class _SearchPageState extends State<SearchPage> {
                       child: GestureDetector(
                         onTap: () {
                           setState(() => isListView = false);
-                          // Update map markers when switching to map view
-                          Future.delayed(Duration(milliseconds: 100), () {
-                            _updateMapMarkers();
+                          // Update markers after a short delay
+                          Future.delayed(Duration(milliseconds: 200), () {
+                            if (mounted && _isMapReady) {
+                              _updateMapMarkers();
+                            }
                           });
                         },
                         child: Container(
@@ -350,7 +375,15 @@ class _SearchPageState extends State<SearchPage> {
 
   Widget _buildListView(ColorNotifier notifier) {
     List<Map<String, dynamic>> allItems = [];
-    
+
+    // Add restaurants
+    for (var restaurant in filteredRestaurants) {
+      allItems.add({
+        "type": "restaurant",
+        "data": restaurant,
+      });
+    }
+
     // Add surprise bags
     for (var bag in filteredBags) {
       var restaurant = homeController.allrest.firstWhere(
@@ -361,7 +394,7 @@ class _SearchPageState extends State<SearchPage> {
           "address": "Address not available",
         },
       );
-      
+
       allItems.add({
         "type": "bag",
         "data": bag,
@@ -402,7 +435,9 @@ class _SearchPageState extends State<SearchPage> {
       itemCount: allItems.length,
       itemBuilder: (context, index) {
         final item = allItems[index];
-        if (item["type"] == "bag") {
+        if (item["type"] == "restaurant") {
+          return _buildRestaurantCard(item["data"], notifier);
+        } else if (item["type"] == "bag") {
           return _buildSurpriseBagCard(item["data"], item["restaurant"], notifier);
         }
         return SizedBox();
@@ -460,20 +495,41 @@ class _SearchPageState extends State<SearchPage> {
 
     return Stack(
       children: [
+        // Use a simpler approach to reduce rendering issues
         GoogleMap(
+          key: ValueKey('search_map'),
           onMapCreated: (GoogleMapController controller) {
-            mapController = controller;
-            _updateMapMarkers();
+            if (!_isMapReady) {
+              mapController = controller;
+              _isMapReady = true;
+
+              // Update markers after a short delay
+              Future.delayed(Duration(milliseconds: 100), () {
+                if (mounted && _isMapReady) {
+                  _updateMapMarkers();
+                }
+              });
+            }
           },
           initialCameraPosition: CameraPosition(
             target: currentLocation,
             zoom: 14.0,
           ),
           markers: markers,
-          myLocationEnabled: true,
+          myLocationEnabled: false, // Disable to reduce rendering load
           myLocationButtonEnabled: false,
           zoomControlsEnabled: false,
           mapToolbarEnabled: false,
+          compassEnabled: false,
+          rotateGesturesEnabled: false, // Disable to reduce rendering load
+          scrollGesturesEnabled: true,
+          tiltGesturesEnabled: false,
+          zoomGesturesEnabled: true,
+          mapType: MapType.normal,
+          buildingsEnabled: false,
+          trafficEnabled: false,
+          indoorViewEnabled: false,
+          liteModeEnabled: false,
         ),
         // Custom location button
         Positioned(
@@ -509,6 +565,134 @@ class _SearchPageState extends State<SearchPage> {
             ),
           ),
       ],
+    );
+  }
+
+  Widget _buildRestaurantCard(Map<String, dynamic> restaurantData, ColorNotifier notifier) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: notifier.containerColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: () {
+          String? restaurantId = restaurantData["id"]?.toString();
+          if (restaurantId != null && restaurantId.isNotEmpty) {
+            Get.to(() => HotelDetails(detailId: restaurantId));
+          } else {
+            Get.snackbar("Error", "Restaurant ID not found");
+          }
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // Restaurant Image
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: CachedNetworkImage(
+                  imageUrl: restaurantData["image"]?.toString() ?? "https://picsum.photos/300/200",
+                  width: 80,
+                  height: 80,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => Container(
+                    width: 80,
+                    height: 80,
+                    color: Colors.grey[300],
+                    child: Icon(Icons.restaurant, color: Colors.grey[600]),
+                  ),
+                  errorWidget: (context, url, error) => Container(
+                    width: 80,
+                    height: 80,
+                    color: Colors.grey[300],
+                    child: Icon(Icons.restaurant, color: Colors.grey[600]),
+                  ),
+                ),
+              ),
+
+              SizedBox(width: 16),
+
+              // Restaurant Details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      restaurantData["title"]?.toString() ?? "Restaurant",
+                      style: TextStyle(
+                        color: notifier.textColor,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+
+                    SizedBox(height: 4),
+
+                    Row(
+                      children: [
+                        Icon(Icons.star, color: Colors.amber, size: 16),
+                        SizedBox(width: 4),
+                        Text(
+                          restaurantData["rating"]?.toString() ?? "0.0",
+                          style: TextStyle(
+                            color: notifier.textColor,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Icon(Icons.location_on, color: Colors.grey, size: 16),
+                        SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            restaurantData["fullAddress"]?.toString() ?? "No address",
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 12,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: 8),
+
+                    Text(
+                      restaurantData["shortDescription"]?.toString() ?? "No description",
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 12,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+
+              // Arrow Icon
+              Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.grey,
+                size: 16,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -875,50 +1059,63 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   void _updateMapMarkers() {
-    markers.clear();
-
-    // Add markers for surprise bags
-    for (int i = 0; i < filteredBags.length; i++) {
-      final bag = filteredBags[i];
-      // Generate random coordinates around current location for demo
-      final lat = currentLocation.latitude + (i * 0.01) - 0.02;
-      final lng = currentLocation.longitude + (i * 0.01) - 0.02;
-
-      markers.add(
-        Marker(
-          markerId: MarkerId('bag_$i'),
-          position: LatLng(lat, lng),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
-          infoWindow: InfoWindow(
-            title: bag["title"] ?? "Surprise Bag",
-            snippet: "\$${bag["discountedPrice"] ?? "9.99"}",
-          ),
-        ),
-      );
+    // Only update markers if map is ready and widget is mounted
+    if (!_isMapReady || !mounted || mapController == null) {
+      return;
     }
 
-    // Add markers for restaurants
-    for (int i = 0; i < filteredRestaurants.length; i++) {
-      final restaurant = filteredRestaurants[i];
-      // Generate random coordinates around current location for demo
-      final lat = currentLocation.latitude + ((i + filteredBags.length) * 0.01) - 0.02;
-      final lng = currentLocation.longitude + ((i + filteredBags.length) * 0.01) - 0.02;
+    try {
+      // Clear existing markers
+      final newMarkers = <Marker>{};
 
-      markers.add(
-        Marker(
-          markerId: MarkerId('restaurant_$i'),
-          position: LatLng(lat, lng),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-          infoWindow: InfoWindow(
-            title: restaurant["title"] ?? "Restaurant",
-            snippet: restaurant["cuisine"] ?? "Restaurant",
+      // Add markers for surprise bags
+      for (int i = 0; i < filteredBags.length; i++) {
+        final bag = filteredBags[i];
+        // Generate random coordinates around current location for demo
+        final lat = currentLocation.latitude + (i * 0.01) - 0.02;
+        final lng = currentLocation.longitude + (i * 0.01) - 0.02;
+
+        newMarkers.add(
+          Marker(
+            markerId: MarkerId('bag_$i'),
+            position: LatLng(lat, lng),
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+            infoWindow: InfoWindow(
+              title: bag["title"] ?? "Surprise Bag",
+              snippet: "\$${bag["discountedPrice"] ?? "9.99"}",
+            ),
           ),
-        ),
-      );
-    }
+        );
+      }
 
-    if (mounted) {
-      setState(() {});
+      // Add markers for restaurants
+      for (int i = 0; i < filteredRestaurants.length; i++) {
+        final restaurant = filteredRestaurants[i];
+        // Generate random coordinates around current location for demo
+        final lat = currentLocation.latitude + ((i + filteredBags.length) * 0.01) - 0.02;
+        final lng = currentLocation.longitude + ((i + filteredBags.length) * 0.01) - 0.02;
+
+        newMarkers.add(
+          Marker(
+            markerId: MarkerId('restaurant_$i'),
+            position: LatLng(lat, lng),
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+            infoWindow: InfoWindow(
+              title: restaurant["title"] ?? "Restaurant",
+              snippet: restaurant["cuisine"] ?? "Restaurant",
+            ),
+          ),
+        );
+      }
+
+      // Update markers in a single setState call
+      if (mounted) {
+        setState(() {
+          markers = newMarkers;
+        });
+      }
+    } catch (e) {
+      print("Error updating map markers: $e");
     }
   }
 
@@ -947,11 +1144,18 @@ class _SearchPageState extends State<SearchPage> {
       Position position = await Geolocator.getCurrentPosition();
       currentLocation = LatLng(position.latitude, position.longitude);
 
-      mapController?.animateCamera(
-        CameraUpdate.newLatLng(currentLocation),
-      );
+      if (mapController != null && _isMapReady) {
+        mapController!.animateCamera(
+          CameraUpdate.newLatLng(currentLocation),
+        );
 
-      _updateMapMarkers();
+        // Update markers after camera animation
+        Future.delayed(Duration(milliseconds: 500), () {
+          if (mounted && _isMapReady) {
+            _updateMapMarkers();
+          }
+        });
+      }
     } catch (e) {
       Get.snackbar("Error", "Failed to get current location");
     }

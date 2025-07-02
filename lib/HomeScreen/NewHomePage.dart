@@ -9,6 +9,8 @@ import 'package:foodrescue_app/HomeScreen/RestaurantReviewsPage.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
+import 'LocationRadiusPage.dart';
+
 class NewHomePage extends StatefulWidget {
   const NewHomePage({Key? key}) : super(key: key);
 
@@ -19,37 +21,31 @@ class NewHomePage extends StatefulWidget {
 class _NewHomePageState extends State<NewHomePage> {
   final HomeController homeController = Get.find<HomeController>();
   String selectedCategory = "all";
-  List<Map<String, dynamic>> filteredBags = [];
 
   @override
   void initState() {
     super.initState();
-    homeController.homeDataApi();
-    _filterBags();
+    // Load data if not already loaded
+    if (homeController.surpriseBags.isEmpty) {
+      homeController.homeDataApi();
+    }
   }
 
-  void _filterBags() {
-    if (selectedCategory == "all") {
-      filteredBags = homeController.surpriseBags.cast<Map<String, dynamic>>();
-    } else {
-      filteredBags = homeController.surpriseBags.where((bag) {
-        // Find restaurant for this bag
-        final restaurant = homeController.allrest.firstWhere(
-          (r) => r["id"] == bag["restaurantId"],
-          orElse: () => {},
-        );
+  List<Map<String, dynamic>> get filteredBags {
+    print("Getting filtered bags - Category: $selectedCategory, Total bags: ${homeController.surpriseBags.length}");
 
-        // Check if restaurant's cuisine matches selected category
-        if (restaurant.isNotEmpty && restaurant["cuisines"] != null) {
-          List<String> cuisines = restaurant["cuisines"].toString().split(',');
-          return cuisines.any((cuisine) =>
-            cuisine.trim().toLowerCase().contains(selectedCategory.toLowerCase())
-          );
-        }
-        return false;
+    if (selectedCategory == "all") {
+      return List<Map<String, dynamic>>.from(homeController.surpriseBags);
+    } else {
+      return homeController.surpriseBags.where((bag) {
+        // Check the bag's cuisine directly
+        final bagCuisine = bag["cuisine"]?.toString().toLowerCase() ?? "";
+        final categoryMatch = bagCuisine.contains(selectedCategory.toLowerCase());
+
+        print("Bag: ${bag["title"]}, Cuisine: $bagCuisine, Category: $selectedCategory, Match: $categoryMatch");
+        return categoryMatch;
       }).cast<Map<String, dynamic>>().toList();
     }
-    setState(() {});
   }
 
   @override
@@ -105,42 +101,40 @@ class _NewHomePageState extends State<NewHomePage> {
                 Container(
                   padding: EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.teal.withOpacity(0.1),
+                    color: orangeColor.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    Icons.location_on,
-                    color: Colors.teal,
-                    size: 20,
-                  ),
+                  child: Image.asset("assets/livelocation.png",
+                  color: orangeColor,
+                  height: MediaQuery.of(context).size.height / 35)
                 ),
                 SizedBox(width: 12),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Chosen location",
-                        style: TextStyle(
-                          color: notifier.textColor,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                  child: GestureDetector(
+                    onTap: () => Get.to(() => LocationRadiusPage()),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Chosen location",
+                          style: TextStyle(
+                            color: notifier.textColor,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      Text(
-                        "Felling, Gateshead",
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 14,
+                        Text(
+                          "Felling, Gateshead",
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 14,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-                Icon(
-                  Icons.keyboard_arrow_down,
-                  color: notifier.textColor,
-                ),
+                
               ],
             ),
           ),
@@ -150,11 +144,9 @@ class _NewHomePageState extends State<NewHomePage> {
             onPressed: () => Get.to(() => Notificationpage()),
             icon: Stack(
               children: [
-                Icon(
-                  Icons.notifications_outlined,
-                  color: notifier.textColor,
-                  size: 24,
-                ),
+                Image.asset("assets/onesignal.png",
+                  color: orangeColor,
+                  height: MediaQuery.of(context).size.height / 35),
                 Positioned(
                   right: 0,
                   top: 0,
@@ -164,6 +156,7 @@ class _NewHomePageState extends State<NewHomePage> {
                     decoration: BoxDecoration(
                       color: orangeColor,
                       shape: BoxShape.circle,
+                      border: Border.all(color: WhiteColor)
                     ),
                   ),
                 ),
@@ -201,7 +194,6 @@ class _NewHomePageState extends State<NewHomePage> {
                     setState(() {
                       selectedCategory = categoryId;
                     });
-                    _filterBags();
                   },
                   borderRadius: BorderRadius.circular(25),
                   child: Container(
