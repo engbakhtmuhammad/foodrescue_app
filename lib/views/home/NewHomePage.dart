@@ -28,9 +28,14 @@ class _NewHomePageState extends State<NewHomePage> {
   @override
   void initState() {
     super.initState();
+    print("NewHomePage initState - Current bags: ${homeController.surpriseBags.length}");
+    
     // Load data if not already loaded
     if (homeController.surpriseBags.isEmpty) {
+      print("Loading data because surprise bags are empty");
       homeController.homeDataApi();
+    } else {
+      print("Data already loaded with ${homeController.surpriseBags.length} bags");
     }
   }
 
@@ -38,16 +43,41 @@ class _NewHomePageState extends State<NewHomePage> {
     print("Getting filtered bags - Category: $selectedCategory, Total bags: ${homeController.surpriseBags.length}");
 
     if (selectedCategory == "all") {
-      return List<Map<String, dynamic>>.from(homeController.surpriseBags);
+      // Return a copy of all surprise bags
+      final allBags = List<Map<String, dynamic>>.from(homeController.surpriseBags);
+      print("Returning ${allBags.length} bags for 'all' category");
+      return allBags;
     } else {
-      return homeController.surpriseBags.where((bag) {
+      // Filter by category using both bag category and restaurant cuisine
+      final filtered = homeController.surpriseBags.where((bag) {
         // Check the bag's category field
         final bagCategory = bag["category"]?.toString().toLowerCase() ?? "";
-        final categoryMatch = bagCategory.contains(selectedCategory.toLowerCase());
+        if (bagCategory.contains(selectedCategory.toLowerCase())) {
+          return true;
+        }
 
-        print("Bag: ${bag["title"]}, Category: $bagCategory, Selected: $selectedCategory, Match: $categoryMatch");
-        return categoryMatch;
+        // Also check restaurant's cuisine as fallback
+        final restaurant = homeController.allrest.firstWhere(
+          (r) => r["id"] == bag["restaurantId"],
+          orElse: () => {},
+        );
+        
+        if (restaurant.isNotEmpty && restaurant["cuisines"] != null) {
+          List<String> cuisines = restaurant["cuisines"].toString().split(',');
+          final cuisineMatch = cuisines.any((cuisine) =>
+            cuisine.trim().toLowerCase().contains(selectedCategory.toLowerCase())
+          );
+          
+          print("Bag: ${bag["title"]}, BagCategory: $bagCategory, RestaurantCuisines: ${restaurant["cuisines"]}, Selected: $selectedCategory, Match: $cuisineMatch");
+          return cuisineMatch;
+        }
+
+        print("Bag: ${bag["title"]}, Category: $bagCategory, Selected: $selectedCategory, Match: false");
+        return false;
       }).cast<Map<String, dynamic>>().toList();
+      
+      print("Returning ${filtered.length} filtered bags for category '$selectedCategory'");
+      return filtered;
     }
   }
 
@@ -186,16 +216,27 @@ class _NewHomePageState extends State<NewHomePage> {
             itemCount: controller.categories.length,
             itemBuilder: (context, index) {
               final category = controller.categories[index];
+              final categoryId = category["id"]?.toString() ?? "";
               final categoryTitle = category["title"]?.toString() ?? "";
-              final isSelected = selectedCategory == categoryTitle;
+              final isSelected = selectedCategory == categoryId;
 
               return Container(
                 margin: EdgeInsets.only(right: 12),
                 child: InkWell(
                   onTap: () {
+                    print("Category selected: $categoryTitle (ID: $categoryId)");
                     setState(() {
-                      selectedCategory = categoryTitle;
+                      selectedCategory = categoryId; // Use ID instead of title
                     });
+                    
+                    // If selecting "All" and no data is loaded, force refresh
+                    if (categoryId == "all" && homeController.surpriseBags.isEmpty) {
+                      print("Forcing data refresh for 'All' category");
+                      homeController.homeDataApi();
+                    }
+                    
+                    // Trigger a rebuild of the GetBuilder widgets
+                    homeController.update();
                   },
                   borderRadius: BorderRadius.circular(25),
                   child: Container(
@@ -264,18 +305,51 @@ class _NewHomePageState extends State<NewHomePage> {
           height: 280,
           child: GetBuilder<HomeController>(
             builder: (controller) {
-              if (filteredBags.isEmpty) {
+              final bags = filteredBags;
+              print("Building recommended section - filtered bags: ${bags.length}, isLoading: ${controller.isLoading.value}");
+              
+              if (controller.isLoading.value && bags.isEmpty) {
                 return Center(
                   child: CircularProgressIndicator(color: Colors.teal),
+                );
+              }
+
+              if (bags.isEmpty && !controller.isLoading.value) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.shopping_bag_outlined, size: 48, color: Colors.grey),
+                      SizedBox(height: 16),
+                      Text(
+                        selectedCategory == "all"
+                          ? "No surprise bags available" 
+                          : "No bags found for '$selectedCategory'",
+                        style: TextStyle(
+                          color: notifier.textColor,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        "Check back later for new bags!",
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
                 );
               }
 
               return ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: EdgeInsets.symmetric(horizontal: 16),
-                itemCount: filteredBags.length > 10 ? 10 : filteredBags.length, // Show max 10 in recommended
+                itemCount: bags.length > 10 ? 10 : bags.length, // Show max 10 in recommended
                 itemBuilder: (context, index) {
-                  final bag = filteredBags[index];
+                  final bag = bags[index];
                   return _buildRecommendedCard(bag, notifier);
                 },
               );
@@ -323,7 +397,10 @@ class _NewHomePageState extends State<NewHomePage> {
         // Vertical list
         GetBuilder<HomeController>(
           builder: (controller) {
-            if (filteredBags.isEmpty) {
+            final bags = filteredBags;
+            print("Building save section - filtered bags: ${bags.length}, isLoading: ${controller.isLoading.value}");
+            
+            if (controller.isLoading.value && bags.isEmpty) {
               return Center(
                 child: Padding(
                   padding: EdgeInsets.all(32),
@@ -344,13 +421,45 @@ class _NewHomePageState extends State<NewHomePage> {
               );
             }
 
+            if (bags.isEmpty && !controller.isLoading.value) {
+              return Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32),
+                  child: Column(
+                    children: [
+                      Icon(Icons.shopping_bag_outlined, size: 48, color: Colors.grey),
+                      SizedBox(height: 16),
+                      Text(
+                        selectedCategory == "all"
+                          ? "No surprise bags available" 
+                          : "No bags found for '$selectedCategory'",
+                        style: TextStyle(
+                          color: notifier.textColor,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        "Check back later for new bags!",
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
             return ListView.builder(
               shrinkWrap: true,
               physics: NeverScrollableScrollPhysics(),
               padding: EdgeInsets.symmetric(horizontal: 16),
-              itemCount: filteredBags.length,
+              itemCount: bags.length,
               itemBuilder: (context, index) {
-                final bag = filteredBags[index];
+                final bag = bags[index];
                 return _buildSaveCard(bag, notifier);
               },
             );

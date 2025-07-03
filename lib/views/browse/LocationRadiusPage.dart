@@ -26,6 +26,7 @@ class _LocationRadiusPageState extends State<LocationRadiusPage> {
   
   Set<Circle> circles = {};
   Set<Marker> markers = {};
+  MapType currentMapType = MapType.hybrid; // Default to satellite view
 
   @override
   void initState() {
@@ -106,7 +107,7 @@ class _LocationRadiusPageState extends State<LocationRadiusPage> {
     }
   }
 
-  void _updateMapCircle() {
+  void _updateMapCircle() async {
     circles.clear();
     markers.clear();
     
@@ -120,11 +121,12 @@ class _LocationRadiusPageState extends State<LocationRadiusPage> {
       strokeWidth: 2,
     ));
     
-    // Add marker for current location
+    // Add marker for current location with custom icon
+    final currentLocationIcon = await _createCustomMarker('current_location');
     markers.add(Marker(
       markerId: MarkerId("current_location"),
       position: currentLocation,
-      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+      icon: currentLocationIcon,
       infoWindow: InfoWindow(
         title: "Your Location",
         snippet: currentAddress,
@@ -146,6 +148,9 @@ class _LocationRadiusPageState extends State<LocationRadiusPage> {
         ),
       ),
     );
+    
+    // Apply map style
+    _applyMapStyle(mapController!);
   }
 
   double _getZoomLevel(double radius) {
@@ -261,6 +266,99 @@ class _LocationRadiusPageState extends State<LocationRadiusPage> {
     );
   }
 
+  // Enhanced marker creation with custom icons and branding
+  Future<BitmapDescriptor> _createCustomMarker(String type) async {
+    try {
+      // Create custom marker icons for different types with brand colors
+      switch (type) {
+        case 'current_location':
+          // Use orange for current location to match the app theme
+          return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange);
+        case 'restaurant':
+          // Use blue for restaurants
+          return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue);
+        case 'surprise_bag':
+          // Use green for surprise bags
+          return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
+        default:
+          return BitmapDescriptor.defaultMarker;
+      }
+    } catch (e) {
+      print("Error creating custom marker: $e");
+      return BitmapDescriptor.defaultMarker;
+    }
+  }
+
+  // Apply custom map style for better visibility and professional appearance
+  void _applyMapStyle(GoogleMapController controller) {
+    try {
+      // Apply a custom map style for a more professional look
+      String mapStyle = '''
+      [
+        {
+          "elementType": "geometry",
+          "stylers": [
+            {
+              "color": "#f5f5f5"
+            }
+          ]
+        },
+        {
+          "elementType": "labels.icon",
+          "stylers": [
+            {
+              "visibility": "off"
+            }
+          ]
+        },
+        {
+          "elementType": "labels.text.fill",
+          "stylers": [
+            {
+              "color": "#616161"
+            }
+          ]
+        },
+        {
+          "featureType": "water",
+          "elementType": "geometry",
+          "stylers": [
+            {
+              "color": "#c9c9c9"
+            }
+          ]
+        }
+      ]
+      ''';
+      
+      // Apply the custom style only if we're not in satellite mode
+      if (currentMapType == MapType.normal) {
+        controller.setMapStyle(mapStyle);
+      } else {
+        // Clear style for satellite view
+        controller.setMapStyle(null);
+      }
+    } catch (e) {
+      print("Error applying map style: $e");
+    }
+  }
+
+  // Toggle between map types with style updates
+  void _toggleMapType() {
+    setState(() {
+      currentMapType = currentMapType == MapType.hybrid 
+        ? MapType.normal 
+        : MapType.hybrid;
+    });
+    
+    // Reapply map style for the new map type
+    if (mapController != null) {
+      Future.delayed(Duration(milliseconds: 100), () {
+        _applyMapStyle(mapController!);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final notifier = Provider.of<ColorNotifier>(context);
@@ -294,26 +392,58 @@ class _LocationRadiusPageState extends State<LocationRadiusPage> {
                   ? Center(
                       child: CircularProgressIndicator(color: orangeColor),
                     )
-                  : GoogleMap(
-                      key: ValueKey('location_radius_map'),
-                      onMapCreated: _onMapCreated,
-                      initialCameraPosition: CameraPosition(
-                        target: currentLocation,
-                        zoom: _getZoomLevel(selectedRadius),
-                      ),
-                      circles: circles,
-                      markers: markers,
-                      myLocationEnabled: false,
-                      myLocationButtonEnabled: false,
-                      zoomControlsEnabled: false,
-                      mapToolbarEnabled: false,
-                      compassEnabled: false,
-                      rotateGesturesEnabled: false,
-                      tiltGesturesEnabled: false,
-                      buildingsEnabled: false,
-                      trafficEnabled: false,
-                      indoorViewEnabled: false,
-                      liteModeEnabled: true, // Enable lite mode for better performance
+                  : Stack(
+                      children: [
+                        GoogleMap(
+                          key: ValueKey('location_radius_map'),
+                          onMapCreated: _onMapCreated,
+                          initialCameraPosition: CameraPosition(
+                            target: currentLocation,
+                            zoom: _getZoomLevel(selectedRadius),
+                          ),
+                          circles: circles,
+                          markers: markers,
+                          myLocationEnabled: true,
+                          myLocationButtonEnabled: false,
+                          zoomControlsEnabled: false,
+                          mapToolbarEnabled: false,
+                          compassEnabled: true,
+                          rotateGesturesEnabled: true,
+                          tiltGesturesEnabled: true,
+                          buildingsEnabled: true,
+                          trafficEnabled: false,
+                          indoorViewEnabled: false,
+                          mapType: currentMapType,
+                          liteModeEnabled: false, // Disable lite mode for full features
+                        ),
+                        // Map type toggle button
+                        Positioned(
+                          top: 16,
+                          right: 16,
+                          child: FloatingActionButton(
+                            mini: true,
+                            backgroundColor: Colors.white,
+                            onPressed: _toggleMapType,
+                            child: Icon(
+                              currentMapType == MapType.hybrid 
+                                ? Icons.map_outlined 
+                                : Icons.satellite_alt,
+                              color: orangeColor,
+                            ),
+                          ),
+                        ),
+                        // Current location button
+                        Positioned(
+                          bottom: 16,
+                          right: 16,
+                          child: FloatingActionButton(
+                            mini: true,
+                            backgroundColor: Colors.white,
+                            onPressed: _getCurrentLocation,
+                            child: Icon(Icons.my_location, color: orangeColor),
+                          ),
+                        ),
+                      ],
                     ),
             ),
           ),

@@ -32,6 +32,7 @@ class _SearchPageState extends State<SearchPage> {
   LatLng currentLocation = LatLng(37.7749, -122.4194); // Default to San Francisco
   String selectedCategory = "all";
   bool _isMapReady = false;
+  MapType currentMapType = MapType.hybrid; // Default to satellite view
 
   @override
   void initState() {
@@ -497,14 +498,17 @@ class _SearchPageState extends State<SearchPage> {
 
     return Stack(
       children: [
-        // Optimized Google Map with minimal features to prevent rendering issues
+        // Enhanced Google Map with satellite view and proper styling
         GoogleMap(
-          key: ValueKey('search_map_optimized'),
+          key: ValueKey('search_map_enhanced'),
           onMapCreated: (GoogleMapController controller) {
             // Prevent multiple controller assignments
             if (mapController == null) {
               mapController = controller;
               _isMapReady = true;
+
+              // Apply custom map styling for better visibility
+              _applyMapStyle(controller);
 
               // Delayed marker update to prevent rendering conflicts
               Future.delayed(Duration(milliseconds: 500), () {
@@ -514,26 +518,48 @@ class _SearchPageState extends State<SearchPage> {
               });
             }
           },
+          onCameraMove: (position) {
+            // Handle camera movement if needed
+          },
+          onCameraIdle: () {
+            // Handle camera idle if needed
+          },
           initialCameraPosition: CameraPosition(
             target: currentLocation,
-            zoom: 13.0, // Reduced zoom for better performance
+            zoom: 14.0, // Optimal zoom for city view
           ),
-          markers: markers,
-          // Minimal configuration to reduce rendering load
-          myLocationEnabled: false,
-          myLocationButtonEnabled: false,
-          zoomControlsEnabled: false,
+          markers: markers, // Use regular markers
+          // Enhanced map configuration for better user experience
+          myLocationEnabled: true,
+          myLocationButtonEnabled: false, // We'll use custom button
+          zoomControlsEnabled: false, // Custom controls
           mapToolbarEnabled: false,
-          compassEnabled: false,
-          rotateGesturesEnabled: false,
+          compassEnabled: true,
+          rotateGesturesEnabled: true,
           scrollGesturesEnabled: true,
-          tiltGesturesEnabled: false,
+          tiltGesturesEnabled: true,
           zoomGesturesEnabled: true,
-          mapType: MapType.normal,
-          buildingsEnabled: false,
+          mapType: currentMapType, // Use dynamic map type
+          buildingsEnabled: true,
           trafficEnabled: false,
           indoorViewEnabled: false,
-          liteModeEnabled: true, // Enable lite mode for better performance
+          liteModeEnabled: false, // Disable lite mode for full features
+        ),
+        // Map type toggle button
+        Positioned(
+          top: 20,
+          right: 70,
+          child: FloatingActionButton(
+            mini: true,
+            backgroundColor: Colors.white,
+            onPressed: _toggleMapType,
+            child: Icon(
+              currentMapType == MapType.hybrid 
+                ? Icons.map_outlined 
+                : Icons.satellite_alt,
+              color: orangeColor,
+            ),
+          ),
         ),
         // Custom location button
         Positioned(
@@ -1077,7 +1103,225 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
-  void _updateMapMarkers() {
+  // Toggle between map types
+  void _toggleMapType() {
+    setState(() {
+      currentMapType = currentMapType == MapType.hybrid 
+        ? MapType.normal 
+        : MapType.hybrid;
+    });
+    
+    // Reapply map style for the new map type
+    if (mapController != null && _isMapReady) {
+      Future.delayed(Duration(milliseconds: 100), () {
+        _applyMapStyle(mapController!);
+      });
+    }
+  }
+
+  // Apply custom map style for better visibility and professional appearance
+  void _applyMapStyle(GoogleMapController controller) {
+    try {
+      // Apply a custom map style for a more professional look
+      String mapStyle = '''
+      [
+        {
+          "elementType": "geometry",
+          "stylers": [
+            {
+              "color": "#f5f5f5"
+            }
+          ]
+        },
+        {
+          "elementType": "labels.icon",
+          "stylers": [
+            {
+              "visibility": "off"
+            }
+          ]
+        },
+        {
+          "elementType": "labels.text.fill",
+          "stylers": [
+            {
+              "color": "#616161"
+            }
+          ]
+        },
+        {
+          "elementType": "labels.text.stroke",
+          "stylers": [
+            {
+              "color": "#f5f5f5"
+            }
+          ]
+        },
+        {
+          "featureType": "administrative.land_parcel",
+          "elementType": "labels.text.fill",
+          "stylers": [
+            {
+              "color": "#bdbdbd"
+            }
+          ]
+        },
+        {
+          "featureType": "poi",
+          "elementType": "geometry",
+          "stylers": [
+            {
+              "color": "#eeeeee"
+            }
+          ]
+        },
+        {
+          "featureType": "poi",
+          "elementType": "labels.text.fill",
+          "stylers": [
+            {
+              "color": "#757575"
+            }
+          ]
+        },
+        {
+          "featureType": "poi.park",
+          "elementType": "geometry",
+          "stylers": [
+            {
+              "color": "#e5e5e5"
+            }
+          ]
+        },
+        {
+          "featureType": "poi.park",
+          "elementType": "labels.text.fill",
+          "stylers": [
+            {
+              "color": "#9e9e9e"
+            }
+          ]
+        },
+        {
+          "featureType": "road",
+          "elementType": "geometry",
+          "stylers": [
+            {
+              "color": "#ffffff"
+            }
+          ]
+        },
+        {
+          "featureType": "road.arterial",
+          "elementType": "labels.text.fill",
+          "stylers": [
+            {
+              "color": "#757575"
+            }
+          ]
+        },
+        {
+          "featureType": "road.highway",
+          "elementType": "geometry",
+          "stylers": [
+            {
+              "color": "#dadada"
+            }
+          ]
+        },
+        {
+          "featureType": "road.highway",
+          "elementType": "labels.text.fill",
+          "stylers": [
+            {
+              "color": "#616161"
+            }
+          ]
+        },
+        {
+          "featureType": "road.local",
+          "elementType": "labels.text.fill",
+          "stylers": [
+            {
+              "color": "#9e9e9e"
+            }
+          ]
+        },
+        {
+          "featureType": "transit.line",
+          "elementType": "geometry",
+          "stylers": [
+            {
+              "color": "#e5e5e5"
+            }
+          ]
+        },
+        {
+          "featureType": "transit.station",
+          "elementType": "geometry",
+          "stylers": [
+            {
+              "color": "#eeeeee"
+            }
+          ]
+        },
+        {
+          "featureType": "water",
+          "elementType": "geometry",
+          "stylers": [
+            {
+              "color": "#c9c9c9"
+            }
+          ]
+        },
+        {
+          "featureType": "water",
+          "elementType": "labels.text.fill",
+          "stylers": [
+            {
+              "color": "#9e9e9e"
+            }
+          ]
+        }
+      ]
+      ''';
+      
+      // Apply the custom style only if we're not in satellite mode
+      if (currentMapType == MapType.normal) {
+        controller.setMapStyle(mapStyle);
+      } else {
+        // Clear style for satellite view
+        controller.setMapStyle(null);
+      }
+    } catch (e) {
+      print("Error applying map style: $e");
+    }
+  }
+
+  // Enhanced marker creation with custom icons and branding
+  Future<BitmapDescriptor> _createCustomMarker(String type) async {
+    try {
+      // Create custom marker icons for different types with brand colors
+      switch (type) {
+        case 'restaurant':
+          // Use a distinctive blue color for restaurants
+          return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue);
+        case 'surprise_bag':
+          // Use orange/red color for surprise bags to match the app theme
+          return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange);
+        case 'current_location':
+          // Use green for current location
+          return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
+        default:
+          return BitmapDescriptor.defaultMarker;
+      }
+    } catch (e) {
+      print("Error creating custom marker: $e");
+      return BitmapDescriptor.defaultMarker;
+    }
+  }
+
+  void _updateMapMarkers() async {
     // Only update markers if map is ready and widget is mounted
     if (!_isMapReady || !mounted || mapController == null) {
       return;
@@ -1087,61 +1331,256 @@ class _SearchPageState extends State<SearchPage> {
       // Clear existing markers
       final newMarkers = <Marker>{};
 
-      // Limit markers to prevent performance issues (max 8 total)
-      final maxBagMarkers = 4;
-      final maxRestaurantMarkers = 4;
+      // Get custom marker icons
+      final bagIcon = await _createCustomMarker('surprise_bag');
+      final restaurantIcon = await _createCustomMarker('restaurant');
+      final currentLocationIcon = await _createCustomMarker('current_location');
 
-      // Add markers for surprise bags (limited)
+      // Add current location marker
+      newMarkers.add(
+        Marker(
+          markerId: MarkerId('current_location'),
+          position: currentLocation,
+          icon: currentLocationIcon,
+          infoWindow: InfoWindow(
+            title: "Your Location",
+            snippet: "Current position",
+          ),
+        ),
+      );
+
+      // Limit markers to prevent performance issues (max 50 total)
+      final maxBagMarkers = 25;
+      final maxRestaurantMarkers = 25;
+
+      // Add markers for surprise bags with real or realistic coordinates
       final bagsToShow = filteredBags.take(maxBagMarkers).toList();
       for (int i = 0; i < bagsToShow.length; i++) {
         final bag = bagsToShow[i];
-        // Generate coordinates around current location for demo
-        final lat = currentLocation.latitude + (i * 0.005) - 0.01;
-        final lng = currentLocation.longitude + (i * 0.005) - 0.01;
+        
+        // Try to get real coordinates from bag data or restaurant
+        double lat = currentLocation.latitude;
+        double lng = currentLocation.longitude;
+        
+        // Find the restaurant for this bag to get coordinates
+        final restaurant = homeController.allrest.firstWhere(
+          (r) => r["id"] == bag["restaurantId"],
+          orElse: () => {},
+        );
+        
+        if (restaurant.isNotEmpty) {
+          // Try to get real coordinates from restaurant
+          try {
+            if (restaurant["latitude"] != null && restaurant["longitude"] != null) {
+              lat = double.parse(restaurant["latitude"].toString());
+              lng = double.parse(restaurant["longitude"].toString());
+            } else {
+              // Generate realistic coordinates around current location
+              lat = currentLocation.latitude + (i * 0.003) - 0.015 + (i % 2 == 0 ? 0.005 : -0.005);
+              lng = currentLocation.longitude + (i * 0.003) - 0.015 + (i % 3 == 0 ? 0.005 : -0.005);
+            }
+          } catch (e) {
+            // Generate realistic coordinates around current location
+            lat = currentLocation.latitude + (i * 0.003) - 0.015 + (i % 2 == 0 ? 0.005 : -0.005);
+            lng = currentLocation.longitude + (i * 0.003) - 0.015 + (i % 3 == 0 ? 0.005 : -0.005);
+          }
+        }
 
         newMarkers.add(
           Marker(
-            markerId: MarkerId('bag_$i'),
+            markerId: MarkerId('bag_${bag["id"] ?? i}'),
             position: LatLng(lat, lng),
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+            icon: bagIcon,
             infoWindow: InfoWindow(
               title: bag["title"] ?? "Surprise Bag",
-              snippet: "\$${bag["discountedPrice"] ?? "9.99"}",
+              snippet: "₹${bag["discountedPrice"] ?? "9.99"} • ${bag["itemsLeft"] ?? "1"} left",
             ),
+            onTap: () {
+              // Show bag details bottom sheet
+              _showBagDetailsBottomSheet(bag);
+            },
           ),
         );
       }
 
-      // Add markers for restaurants (limited)
+      // Add markers for restaurants with coordinates
       final restaurantsToShow = filteredRestaurants.take(maxRestaurantMarkers).toList();
       for (int i = 0; i < restaurantsToShow.length; i++) {
         final restaurant = restaurantsToShow[i];
-        // Generate coordinates around current location for demo
-        final lat = currentLocation.latitude + ((i + bagsToShow.length) * 0.005) - 0.01;
-        final lng = currentLocation.longitude + ((i + bagsToShow.length) * 0.005) - 0.01;
+        
+        // Try to get real coordinates from restaurant data
+        double lat = currentLocation.latitude;
+        double lng = currentLocation.longitude;
+        
+        // Check if restaurant has coordinates
+        if (restaurant["latitude"] != null && restaurant["longitude"] != null) {
+          try {
+            lat = double.parse(restaurant["latitude"].toString());
+            lng = double.parse(restaurant["longitude"].toString());
+          } catch (e) {
+            // Use generated coordinates around current location
+            lat = currentLocation.latitude + ((i + 0.5) * 0.004) - 0.020 + (i % 2 == 0 ? -0.008 : 0.008);
+            lng = currentLocation.longitude + ((i + 0.5) * 0.004) - 0.020 + (i % 3 == 0 ? -0.008 : 0.008);
+          }
+        } else {
+          // Generate realistic coordinates around current location
+          lat = currentLocation.latitude + ((i + 0.5) * 0.004) - 0.020 + (i % 2 == 0 ? -0.008 : 0.008);
+          lng = currentLocation.longitude + ((i + 0.5) * 0.004) - 0.020 + (i % 3 == 0 ? -0.008 : 0.008);
+        }
 
         newMarkers.add(
           Marker(
-            markerId: MarkerId('restaurant_$i'),
+            markerId: MarkerId('restaurant_${restaurant["id"] ?? i}'),
             position: LatLng(lat, lng),
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+            icon: restaurantIcon,
             infoWindow: InfoWindow(
               title: restaurant["title"] ?? "Restaurant",
-              snippet: restaurant["cuisine"] ?? "Restaurant",
+              snippet: "${restaurant["cuisines"] ?? "Food"} • ⭐ ${restaurant["rate"] ?? "4.5"}",
             ),
+            onTap: () {
+              // Navigate to restaurant details
+              String? restaurantId = restaurant["id"]?.toString();
+              if (restaurantId != null && restaurantId.isNotEmpty) {
+                Get.to(() => HotelDetails(detailId: restaurantId));
+              }
+            },
           ),
         );
       }
 
-      // Update markers in a single setState call
+      // Update markers on map
       if (mounted) {
         setState(() {
           markers = newMarkers;
         });
       }
+
+      print("Updated map with ${newMarkers.length} markers (${bagsToShow.length} bags, ${restaurantsToShow.length} restaurants)");
     } catch (e) {
       print("Error updating map markers: $e");
     }
+  }
+
+  // Show bag details in bottom sheet when marker is tapped
+  void _showBagDetailsBottomSheet(Map<String, dynamic> bag) {
+    // Find restaurant data
+    final restaurant = homeController.allrest.firstWhere(
+      (r) => r["id"] == bag["restaurantId"],
+      orElse: () => {
+        "title": "Unknown Restaurant",
+        "image": "",
+        "address": "Address not available",
+      },
+    );
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: 300,
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Handle bar
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.grey,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      bag["title"] ?? "Surprise Bag",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      restaurant["title"] ?? "Unknown Restaurant",
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Text(
+                          "\$${bag["originalPrice"] ?? "13.95"}",
+                          style: TextStyle(
+                            fontSize: 14,
+                            decoration: TextDecoration.lineThrough,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          "\$${bag["discountedPrice"] ?? "4.65"}",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: orangeColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      "${bag["itemsLeft"] ?? "1"} left",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.orange,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Spacer(),
+                    ElevatedButton(
+                      onPressed: () {
+                        Get.back();
+                        Get.to(() => SurpriseBagDetails(
+                          bagData: bag,
+                          restaurantName: restaurant["title"] ?? "Unknown Restaurant",
+                          restaurantImage: restaurant["image"] ?? "",
+                          restaurantAddress: restaurant["address"] ?? "Address not available",
+                        ));
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: orangeColor,
+                        minimumSize: Size(double.infinity, 45),
+                      ),
+                      child: Text(
+                        "View Details",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _getCurrentLocation() async {
