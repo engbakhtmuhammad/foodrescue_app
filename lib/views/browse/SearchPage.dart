@@ -58,10 +58,22 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   void _filterByCategory() {
+    print("Filtering by category: $selectedCategory");
+    
     if (selectedCategory == "all") {
-      filteredBags = homeController.surpriseBags.cast<Map<String, dynamic>>();
-      filteredRestaurants = homeController.allrest.cast<Map<String, dynamic>>();
+      filteredBags = List<Map<String, dynamic>>.from(homeController.surpriseBags);
+      filteredRestaurants = List<Map<String, dynamic>>.from(homeController.allrest);
+      print("Showing all items: ${filteredBags.length} bags, ${filteredRestaurants.length} restaurants");
     } else {
+      // Find the selected category object to get the title for comparison
+      final selectedCategoryData = homeController.categories.firstWhere(
+        (cat) => cat["id"] == selectedCategory,
+        orElse: () => {"title": selectedCategory},
+      );
+      final categoryTitle = selectedCategoryData["title"]?.toString().toLowerCase() ?? selectedCategory.toLowerCase();
+      
+      print("Filtering by category title: $categoryTitle");
+
       // Filter surprise bags by restaurant cuisine
       filteredBags = homeController.surpriseBags.where((bag) {
         final restaurant = homeController.allrest.firstWhere(
@@ -69,25 +81,57 @@ class _SearchPageState extends State<SearchPage> {
           orElse: () => {},
         );
 
-        if (restaurant.isNotEmpty && restaurant["cuisines"] != null) {
-          List<String> cuisines = restaurant["cuisines"].toString().split(',');
-          return cuisines.any((cuisine) =>
-            cuisine.trim().toLowerCase().contains(selectedCategory.toLowerCase())
-          );
+        if (restaurant.isNotEmpty) {
+          // Check restaurant category field first
+          if (restaurant["category"] != null) {
+            String restaurantCategory = restaurant["category"].toString().toLowerCase();
+            if (restaurantCategory.contains(categoryTitle)) {
+              return true;
+            }
+          }
+          
+          // Then check cuisines field
+          if (restaurant["cuisines"] != null) {
+            List<String> cuisines = restaurant["cuisines"].toString().split(',');
+            bool matches = cuisines.any((cuisine) =>
+              cuisine.trim().toLowerCase().contains(categoryTitle)
+            );
+            if (matches) {
+              return true;
+            }
+          }
+          
+          // Also check if bag has direct category
+          if (bag["category"] != null) {
+            String bagCategory = bag["category"].toString().toLowerCase();
+            return bagCategory.contains(categoryTitle);
+          }
         }
         return false;
       }).cast<Map<String, dynamic>>().toList();
 
-      // Filter restaurants by cuisine
+      // Filter restaurants by cuisine and category
       filteredRestaurants = homeController.allrest.where((restaurant) {
+        // Check restaurant category field first
+        if (restaurant["category"] != null) {
+          String restaurantCategory = restaurant["category"].toString().toLowerCase();
+          if (restaurantCategory.contains(categoryTitle)) {
+            return true;
+          }
+        }
+        
+        // Then check cuisines field
         if (restaurant["cuisines"] != null) {
           List<String> cuisines = restaurant["cuisines"].toString().split(',');
           return cuisines.any((cuisine) =>
-            cuisine.trim().toLowerCase().contains(selectedCategory.toLowerCase())
+            cuisine.trim().toLowerCase().contains(categoryTitle)
           );
         }
+        
         return false;
       }).cast<Map<String, dynamic>>().toList();
+
+      print("Filtered results: ${filteredBags.length} bags, ${filteredRestaurants.length} restaurants");
     }
 
     // Update map markers when category changes
@@ -101,8 +145,14 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   void _initializeData() {
+    // Initialize with all data first
     filteredBags = List.from(homeController.surpriseBags);
     filteredRestaurants = List.from(homeController.allrest);
+    
+    // Apply initial category filter (should be "all" by default)
+    _filterByCategory();
+    
+    print("Initialized with ${filteredBags.length} bags and ${filteredRestaurants.length} restaurants");
   }
 
   void _performSearch(String query) {
@@ -115,42 +165,87 @@ class _SearchPageState extends State<SearchPage> {
         allBags = allBags.where((bag) {
           final title = bag["title"]?.toString().toLowerCase() ?? "";
           final category = bag["category"]?.toString().toLowerCase() ?? "";
+          final description = bag["description"]?.toString().toLowerCase() ?? "";
+          
           return title.contains(query.toLowerCase()) ||
-                 category.contains(query.toLowerCase());
+                 category.contains(query.toLowerCase()) ||
+                 description.contains(query.toLowerCase());
         }).cast<Map<String, dynamic>>().toList();
 
         allRestaurants = allRestaurants.where((restaurant) {
           final title = restaurant["title"]?.toString().toLowerCase() ?? "";
           final cuisines = restaurant["cuisines"]?.toString().toLowerCase() ?? "";
+          final category = restaurant["category"]?.toString().toLowerCase() ?? "";
+          final address = restaurant["address"]?.toString().toLowerCase() ?? "";
+          
           return title.contains(query.toLowerCase()) ||
-                 cuisines.contains(query.toLowerCase());
+                 cuisines.contains(query.toLowerCase()) ||
+                 category.contains(query.toLowerCase()) ||
+                 address.contains(query.toLowerCase());
         }).cast<Map<String, dynamic>>().toList();
       }
 
       // Apply category filter
       if (selectedCategory != "all") {
+        // Find the selected category object to get the title for comparison
+        final selectedCategoryData = homeController.categories.firstWhere(
+          (cat) => cat["id"] == selectedCategory,
+          orElse: () => {"title": selectedCategory},
+        );
+        final categoryTitle = selectedCategoryData["title"]?.toString().toLowerCase() ?? selectedCategory.toLowerCase();
+
         allBags = allBags.where((bag) {
           final restaurant = homeController.allrest.firstWhere(
             (r) => r["id"] == bag["restaurantId"],
             orElse: () => {},
           );
 
-          if (restaurant.isNotEmpty && restaurant["cuisines"] != null) {
-            List<String> cuisines = restaurant["cuisines"].toString().split(',');
-            return cuisines.any((cuisine) =>
-              cuisine.trim().toLowerCase().contains(selectedCategory.toLowerCase())
-            );
+          if (restaurant.isNotEmpty) {
+            // Check restaurant category field first
+            if (restaurant["category"] != null) {
+              String restaurantCategory = restaurant["category"].toString().toLowerCase();
+              if (restaurantCategory.contains(categoryTitle)) {
+                return true;
+              }
+            }
+            
+            // Then check cuisines field
+            if (restaurant["cuisines"] != null) {
+              List<String> cuisines = restaurant["cuisines"].toString().split(',');
+              bool matches = cuisines.any((cuisine) =>
+                cuisine.trim().toLowerCase().contains(categoryTitle)
+              );
+              if (matches) {
+                return true;
+              }
+            }
+            
+            // Also check if bag has direct category
+            if (bag["category"] != null) {
+              String bagCategory = bag["category"].toString().toLowerCase();
+              return bagCategory.contains(categoryTitle);
+            }
           }
           return false;
         }).toList();
 
         allRestaurants = allRestaurants.where((restaurant) {
+          // Check restaurant category field first
+          if (restaurant["category"] != null) {
+            String restaurantCategory = restaurant["category"].toString().toLowerCase();
+            if (restaurantCategory.contains(categoryTitle)) {
+              return true;
+            }
+          }
+          
+          // Then check cuisines field
           if (restaurant["cuisines"] != null) {
             List<String> cuisines = restaurant["cuisines"].toString().split(',');
             return cuisines.any((cuisine) =>
-              cuisine.trim().toLowerCase().contains(selectedCategory.toLowerCase())
+              cuisine.trim().toLowerCase().contains(categoryTitle)
             );
           }
+          
           return false;
         }).toList();
       }
@@ -744,9 +839,7 @@ class _SearchPageState extends State<SearchPage> {
         onTap: () {
           Get.to(() => SurpriseBagDetails(
             bagData: bag,
-            restaurantName: restaurant["title"] ?? "Unknown Restaurant",
-            restaurantImage: restaurant["image"] ?? "",
-            restaurantAddress: restaurant["address"] ?? "Address not available",
+            restaurantData: restaurant,
           ));
         },
         borderRadius: BorderRadius.circular(12),
@@ -988,9 +1081,7 @@ class _SearchPageState extends State<SearchPage> {
 
             Get.to(() => SurpriseBagDetails(
               bagData: item,
-              restaurantName: restaurant["title"] ?? "Unknown Restaurant",
-              restaurantImage: restaurant["image"] ?? "",
-              restaurantAddress: restaurant["address"] ?? "Address not available",
+              restaurantData: restaurant,
             ));
           }
         },
@@ -1559,9 +1650,7 @@ class _SearchPageState extends State<SearchPage> {
                         Get.back();
                         Get.to(() => SurpriseBagDetails(
                           bagData: bag,
-                          restaurantName: restaurant["title"] ?? "Unknown Restaurant",
-                          restaurantImage: restaurant["image"] ?? "",
-                          restaurantAddress: restaurant["address"] ?? "Address not available",
+                          restaurantData: restaurant,
                         ));
                       },
                       style: ElevatedButton.styleFrom(

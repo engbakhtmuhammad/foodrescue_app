@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:iconly/iconly.dart';
 import 'package:foodrescue_app/Utils/Colors.dart';
 import 'package:foodrescue_app/controllers/home_controller.dart';
 import 'package:foodrescue_app/controllers/favourites_controller.dart';
@@ -22,69 +23,112 @@ class NewHomePage extends StatefulWidget {
 
 class _NewHomePageState extends State<NewHomePage> {
   final HomeController homeController = Get.find<HomeController>();
-  final FavouritesController favouritesController = Get.put(FavouritesController());
+  final FavouritesController favouritesController =
+      Get.put(FavouritesController());
   String selectedCategory = "all";
 
   @override
   void initState() {
     super.initState();
-    print("NewHomePage initState - Current bags: ${homeController.surpriseBags.length}");
-    
+    print(
+        "NewHomePage initState - Current bags: ${homeController.surpriseBags.length}");
+
     // Load data if not already loaded
     if (homeController.surpriseBags.isEmpty) {
       print("Loading data because surprise bags are empty");
       homeController.homeDataApi();
     } else {
-      print("Data already loaded with ${homeController.surpriseBags.length} bags");
+      print(
+          "Data already loaded with ${homeController.surpriseBags.length} bags");
     }
   }
 
   List<Map<String, dynamic>> get filteredBags {
-    print("Getting filtered bags - Category: $selectedCategory, Total bags: ${homeController.surpriseBags.length}");
+    print(
+        "Getting filtered bags - Category: $selectedCategory, Total bags: ${homeController.surpriseBags.length}");
 
     if (selectedCategory == "all") {
       // Return a copy of all surprise bags
-      final allBags = List<Map<String, dynamic>>.from(homeController.surpriseBags);
+      final allBags =
+          List<Map<String, dynamic>>.from(homeController.surpriseBags);
       print("Returning ${allBags.length} bags for 'all' category");
       return allBags;
     } else {
-      // Filter by category using both bag category and restaurant cuisine
-      final filtered = homeController.surpriseBags.where((bag) {
-        // Check the bag's category field
-        final bagCategory = bag["category"]?.toString().toLowerCase() ?? "";
-        if (bagCategory.contains(selectedCategory.toLowerCase())) {
-          return true;
-        }
-
-        // Also check restaurant's cuisine as fallback
-        final restaurant = homeController.allrest.firstWhere(
-          (r) => r["id"] == bag["restaurantId"],
-          orElse: () => {},
-        );
-        
-        if (restaurant.isNotEmpty && restaurant["cuisines"] != null) {
-          List<String> cuisines = restaurant["cuisines"].toString().split(',');
-          final cuisineMatch = cuisines.any((cuisine) =>
-            cuisine.trim().toLowerCase().contains(selectedCategory.toLowerCase())
-          );
-          
-          print("Bag: ${bag["title"]}, BagCategory: $bagCategory, RestaurantCuisines: ${restaurant["cuisines"]}, Selected: $selectedCategory, Match: $cuisineMatch");
-          return cuisineMatch;
-        }
-
-        print("Bag: ${bag["title"]}, Category: $bagCategory, Selected: $selectedCategory, Match: false");
-        return false;
-      }).cast<Map<String, dynamic>>().toList();
+      // Find the selected category data to get the title for comparison
+      final selectedCategoryData = homeController.categories.firstWhere(
+        (cat) => cat["id"] == selectedCategory,
+        orElse: () => {"title": selectedCategory},
+      );
+      final categoryTitle = selectedCategoryData["title"]?.toString().toLowerCase() ?? selectedCategory.toLowerCase();
       
-      print("Returning ${filtered.length} filtered bags for category '$selectedCategory'");
+      print("Filtering by category ID: $selectedCategory, Title: $categoryTitle");
+
+      // Filter by category using both bag category and restaurant cuisine
+      final filtered = homeController.surpriseBags
+          .where((bag) {
+            // Check the bag's category field
+            final bagCategory = bag["category"]?.toString().toLowerCase() ?? "";
+            if (bagCategory.contains(categoryTitle)) {
+              print("Bag ${bag["title"]} matches by bag category: $bagCategory");
+              return true;
+            }
+
+            // Also check restaurant's cuisine as fallback
+            final restaurant = homeController.allrest.firstWhere(
+              (r) => r["id"] == bag["restaurantId"],
+              orElse: () => {},
+            );
+
+            if (restaurant.isNotEmpty) {
+              // Check restaurant category field first
+              if (restaurant["category"] != null) {
+                String restaurantCategory = restaurant["category"].toString().toLowerCase();
+                if (restaurantCategory.contains(categoryTitle)) {
+                  print("Bag ${bag["title"]} matches by restaurant category: $restaurantCategory");
+                  return true;
+                }
+              }
+              
+              // Then check cuisines field
+              if (restaurant["cuisines"] != null) {
+                List<String> cuisines = restaurant["cuisines"].toString().split(',');
+                final cuisineMatch = cuisines.any((cuisine) => cuisine
+                    .trim()
+                    .toLowerCase()
+                    .contains(categoryTitle));
+
+                if (cuisineMatch) {
+                  print("Bag ${bag["title"]} matches by restaurant cuisine: ${restaurant["cuisines"]}");
+                  return true;
+                }
+              }
+            }
+
+            return false;
+          })
+          .cast<Map<String, dynamic>>()
+          .toList();
+
+      print(
+          "Returning ${filtered.length} filtered bags for category '$selectedCategory' (title: '$categoryTitle')");
       return filtered;
     }
+  }
+
+  String _getCategoryDisplayName() {
+    if (selectedCategory == "all") return "All";
+    
+    final selectedCategoryData = homeController.categories.firstWhere(
+      (cat) => cat["id"] == selectedCategory,
+      orElse: () => {"title": selectedCategory},
+    );
+    return selectedCategoryData["title"]?.toString() ?? selectedCategory;
   }
 
   @override
   Widget build(BuildContext context) {
     ColorNotifier notifier = Provider.of<ColorNotifier>(context, listen: true);
-    
+
     return Scaffold(
       backgroundColor: notifier.background,
       body: SafeArea(
@@ -92,10 +136,10 @@ class _NewHomePageState extends State<NewHomePage> {
           children: [
             // Header with location and notification
             _buildHeader(notifier),
-            
+
             // Category tabs
             _buildCategoryTabs(notifier),
-            
+
             // Content
             Expanded(
               child: RefreshIndicator(
@@ -106,9 +150,9 @@ class _NewHomePageState extends State<NewHomePage> {
                     children: [
                       // Recommended section
                       _buildRecommendedSection(notifier),
-                      
+
                       SizedBox(height: 24),
-                      
+
                       // Save before it's too late section
                       _buildSaveSection(notifier),
                     ],
@@ -131,15 +175,12 @@ class _NewHomePageState extends State<NewHomePage> {
           Expanded(
             child: Row(
               children: [
-                Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: orangeColor.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Image.asset("assets/livelocation.png",
-                  color: orangeColor,
-                  height: MediaQuery.of(context).size.height / 45)
+                IconButton.filledTonal(
+                  style: IconButton.styleFrom(
+                      backgroundColor: orangeColor.withOpacity(.1)),
+                  onPressed: () => Get.to(() => LocationRadiusPage()),
+                  icon:
+                      Icon(IconlyLight.location, color: orangeColor, size: 24),
                 ),
                 SizedBox(width: 12),
                 Expanded(
@@ -167,19 +208,17 @@ class _NewHomePageState extends State<NewHomePage> {
                     ),
                   ),
                 ),
-                
               ],
             ),
           ),
-          
-          // Notification button
-          IconButton(
+
+          IconButton.filledTonal(
+            style: IconButton.styleFrom(
+                backgroundColor: orangeColor.withOpacity(.1)),
             onPressed: () => Get.to(() => Notificationpage()),
             icon: Stack(
               children: [
-                Image.asset("assets/onesignal.png",
-                  color: orangeColor,
-                  height: MediaQuery.of(context).size.height / 35),
+                Icon(IconlyLight.notification, color: orangeColor, size: 24),
                 Positioned(
                   right: 0,
                   top: 0,
@@ -187,10 +226,9 @@ class _NewHomePageState extends State<NewHomePage> {
                     width: 8,
                     height: 8,
                     decoration: BoxDecoration(
-                      color: orangeColor,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: WhiteColor)
-                    ),
+                        color: orangeColor,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: WhiteColor)),
                   ),
                 ),
               ],
@@ -203,7 +241,7 @@ class _NewHomePageState extends State<NewHomePage> {
 
   Widget _buildCategoryTabs(ColorNotifier notifier) {
     return SizedBox(
-      height: 40,
+      height: 50,
       child: GetBuilder<HomeController>(
         builder: (controller) {
           if (controller.categories.isEmpty) {
@@ -224,17 +262,19 @@ class _NewHomePageState extends State<NewHomePage> {
                 margin: EdgeInsets.only(right: 12),
                 child: InkWell(
                   onTap: () {
-                    print("Category selected: $categoryTitle (ID: $categoryId)");
+                    print(
+                        "Category selected: $categoryTitle (ID: $categoryId)");
                     setState(() {
                       selectedCategory = categoryId; // Use ID instead of title
                     });
-                    
+
                     // If selecting "All" and no data is loaded, force refresh
-                    if (categoryId == "all" && homeController.surpriseBags.isEmpty) {
+                    if (categoryId == "all" &&
+                        homeController.surpriseBags.isEmpty) {
                       print("Forcing data refresh for 'All' category");
                       homeController.homeDataApi();
                     }
-                    
+
                     // Trigger a rebuild of the GetBuilder widgets
                     homeController.update();
                   },
@@ -245,7 +285,9 @@ class _NewHomePageState extends State<NewHomePage> {
                       color: isSelected ? Colors.teal : notifier.containerColor,
                       borderRadius: BorderRadius.circular(25),
                       border: Border.all(
-                        color: isSelected ? Colors.teal : Colors.grey.withValues(alpha: 0.3),
+                        color: isSelected
+                            ? Colors.teal
+                            : Colors.grey.withValues(alpha: 0.3),
                       ),
                     ),
                     child: Text(
@@ -253,7 +295,8 @@ class _NewHomePageState extends State<NewHomePage> {
                       style: TextStyle(
                         color: isSelected ? Colors.white : notifier.textColor,
                         fontSize: 14,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.normal,
                       ),
                     ),
                   ),
@@ -284,7 +327,7 @@ class _NewHomePageState extends State<NewHomePage> {
                 ),
               ),
               TextButton(
-                onPressed: ()=>Get.to(() => SearchPage()),
+                onPressed: () => Get.to(() => SearchPage()),
                 child: Text(
                   "See all",
                   style: TextStyle(
@@ -297,17 +340,18 @@ class _NewHomePageState extends State<NewHomePage> {
             ],
           ),
         ),
-        
+
         SizedBox(height: 16),
-        
+
         // Horizontal scrolling cards
         Container(
-          height: 280,
+          height: 300,
           child: GetBuilder<HomeController>(
             builder: (controller) {
               final bags = filteredBags;
-              print("Building recommended section - filtered bags: ${bags.length}, isLoading: ${controller.isLoading.value}");
-              
+              print(
+                  "Building recommended section - filtered bags: ${bags.length}, isLoading: ${controller.isLoading.value}");
+
               if (controller.isLoading.value && bags.isEmpty) {
                 return Center(
                   child: CircularProgressIndicator(color: Colors.teal),
@@ -319,12 +363,12 @@ class _NewHomePageState extends State<NewHomePage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.shopping_bag_outlined, size: 48, color: Colors.grey),
+                      Icon(IconlyLight.bag, size: 48, color: Colors.grey),
                       SizedBox(height: 16),
                       Text(
                         selectedCategory == "all"
-                          ? "No surprise bags available" 
-                          : "No bags found for '$selectedCategory'",
+                            ? "No surprise bags available"
+                            : "No bags found for '${_getCategoryDisplayName()}'",
                         style: TextStyle(
                           color: notifier.textColor,
                           fontSize: 16,
@@ -347,7 +391,9 @@ class _NewHomePageState extends State<NewHomePage> {
               return ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: EdgeInsets.symmetric(horizontal: 16),
-                itemCount: bags.length > 10 ? 10 : bags.length, // Show max 10 in recommended
+                itemCount: bags.length > 10
+                    ? 10
+                    : bags.length, // Show max 10 in recommended
                 itemBuilder: (context, index) {
                   final bag = bags[index];
                   return _buildRecommendedCard(bag, notifier);
@@ -391,15 +437,16 @@ class _NewHomePageState extends State<NewHomePage> {
             ],
           ),
         ),
-        
+
         SizedBox(height: 16),
-        
+
         // Vertical list
         GetBuilder<HomeController>(
           builder: (controller) {
             final bags = filteredBags;
-            print("Building save section - filtered bags: ${bags.length}, isLoading: ${controller.isLoading.value}");
-            
+            print(
+                "Building save section - filtered bags: ${bags.length}, isLoading: ${controller.isLoading.value}");
+
             if (controller.isLoading.value && bags.isEmpty) {
               return Center(
                 child: Padding(
@@ -427,12 +474,12 @@ class _NewHomePageState extends State<NewHomePage> {
                   padding: EdgeInsets.all(32),
                   child: Column(
                     children: [
-                      Icon(Icons.shopping_bag_outlined, size: 48, color: Colors.grey),
+                      Icon(IconlyLight.bag, size: 48, color: Colors.grey),
                       SizedBox(height: 16),
                       Text(
                         selectedCategory == "all"
-                          ? "No surprise bags available" 
-                          : "No bags found for '$selectedCategory'",
+                            ? "No surprise bags available"
+                            : "No bags found for '${_getCategoryDisplayName()}'",
                         style: TextStyle(
                           color: notifier.textColor,
                           fontSize: 16,
@@ -469,14 +516,15 @@ class _NewHomePageState extends State<NewHomePage> {
     );
   }
 
-  Widget _buildRecommendedCard(Map<String, dynamic> bag, ColorNotifier notifier) {
+  Widget _buildRecommendedCard(
+      Map<String, dynamic> bag, ColorNotifier notifier) {
     // Find restaurant data
     final restaurant = homeController.allrest.firstWhere(
       (r) => r["id"] == bag["restaurantId"],
       orElse: () => {
         "title": "Unknown Restaurant",
         "image": "",
-        "address": "Address not available",
+        "fullAddress": "Address not available",
       },
     );
 
@@ -486,30 +534,26 @@ class _NewHomePageState extends State<NewHomePage> {
       child: InkWell(
         onTap: () {
           Get.to(() => SurpriseBagDetails(
-            bagData: bag,
-            restaurantName: restaurant["title"] ?? "Unknown Restaurant",
-            restaurantImage: restaurant["image"] ?? "",
-            restaurantAddress: restaurant["address"] ?? "Address not available",
-          ));
+                bagData: bag,
+                restaurantData: restaurant,
+              ));
         },
         onLongPress: () {
           Get.to(() => RestaurantReviewsPage(
-            restaurantId: restaurant["id"] ?? "",
-            restaurantName: restaurant["title"] ?? "Unknown Restaurant",
-          ));
+                restaurantId: restaurant["id"] ?? "",
+                restaurantName: restaurant["title"] ?? "Unknown Restaurant",
+              ));
         },
         borderRadius: BorderRadius.circular(12),
         child: Container(
           decoration: BoxDecoration(
-            color: notifier.containerColor,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 8,
-                offset: Offset(0, 2),
-              ),
-            ],
+            border: Border.all(
+              color: Colors.grey.withOpacity(0.2),
+              width: 1,
+            ),
+            
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -523,7 +567,11 @@ class _NewHomePageState extends State<NewHomePage> {
                       topRight: Radius.circular(12),
                     ),
                     child: CachedNetworkImage(
-                      imageUrl: bag["img"] ?? "https://picsum.photos/280/160",
+                      imageUrl: bag["img"]?.toString().isNotEmpty == true
+                          ? bag["img"]
+                          : bag["image"]?.toString().isNotEmpty == true
+                              ? bag["image"]
+                              : "https://via.placeholder.com/280x160/f0f0f0/999999?text=No+Image",
                       width: double.infinity,
                       height: 160,
                       fit: BoxFit.cover,
@@ -531,13 +579,15 @@ class _NewHomePageState extends State<NewHomePage> {
                         width: double.infinity,
                         height: 160,
                         color: Colors.grey[300],
-                        child: Icon(Icons.restaurant, color: Colors.grey, size: 40),
+                        child: Icon(IconlyLight.category,
+                            color: Colors.grey, size: 40),
                       ),
                       errorWidget: (context, url, error) => Container(
                         width: double.infinity,
                         height: 160,
                         color: Colors.grey[300],
-                        child: Icon(Icons.restaurant, color: Colors.grey, size: 40),
+                        child: Icon(IconlyLight.category,
+                            color: Colors.grey, size: 40),
                       ),
                     ),
                   ),
@@ -576,7 +626,7 @@ class _NewHomePageState extends State<NewHomePage> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.star, color: Colors.amber, size: 14),
+                          Icon(IconlyBold.star, color: Colors.amber, size: 14),
                           SizedBox(width: 2),
                           Text(
                             restaurant["rating"]?.toString() ?? "4.3",
@@ -596,36 +646,25 @@ class _NewHomePageState extends State<NewHomePage> {
                     bottom: 12,
                     right: 12,
                     child: Obx(() {
-                      final bagId = bag["id"] ?? DateTime.now().millisecondsSinceEpoch.toString();
+                      final bagId = bag["id"] ??
+                          DateTime.now().millisecondsSinceEpoch.toString();
                       final isFav = favouritesController.isFavourite(bagId);
 
-                      return GestureDetector(
-                        onTap: () {
+                      return IconButton.filledTonal(
+                        style: IconButton.styleFrom(
+                            backgroundColor: orangeColor.withOpacity(.2)),
+                        onPressed: () {
                           favouritesController.toggleFavourite(
                             bag,
                             restaurant["title"] ?? "Unknown Restaurant",
                             restaurant["image"] ?? "",
-                            restaurant["address"] ?? "Address not available",
+                            restaurant["fullAddress"] ?? "Address not available",
                           );
                         },
-                        child: Container(
-                          padding: EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.9),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 4,
-                                offset: Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            isFav ? Icons.favorite : Icons.favorite_border,
-                            size: 20,
-                            color: isFav ? Colors.red : Colors.grey[600],
-                          ),
+                        icon: Icon(
+                          isFav ? IconlyBold.heart : IconlyLight.heart,
+                          size: 20,
+                          color: isFav ? Colors.red : Colors.grey[600],
                         ),
                       );
                     }),
@@ -652,10 +691,23 @@ class _NewHomePageState extends State<NewHomePage> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: CachedNetworkImage(
-                          imageUrl: restaurant["image"] ?? "https://picsum.photos/40/40",
+                          imageUrl: restaurant["image"]
+                                      ?.toString()
+                                      .isNotEmpty ==
+                                  true
+                              ? restaurant["image"]
+                              : restaurant["img"]?.toString().isNotEmpty == true
+                                  ? restaurant["img"]
+                                  : "https://via.placeholder.com/40x40/f0f0f0/999999?text=Logo",
                           fit: BoxFit.cover,
-                          placeholder: (context, url) => Icon(Icons.restaurant, color: Colors.grey, size: 20),
-                          errorWidget: (context, url, error) => Icon(Icons.restaurant, color: Colors.grey, size: 20),
+                          placeholder: (context, url) => Icon(
+                              IconlyLight.category,
+                              color: Colors.grey,
+                              size: 20),
+                          errorWidget: (context, url, error) => Icon(
+                              IconlyLight.category,
+                              color: Colors.grey,
+                              size: 20),
                         ),
                       ),
                     ),
@@ -672,16 +724,14 @@ class _NewHomePageState extends State<NewHomePage> {
                     Text(
                       restaurant["title"] ?? "Unknown Restaurant",
                       style: TextStyle(
-                        color: notifier.textColor,
+                        color: Colors.grey[800],
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-
                     SizedBox(height: 4),
-
                     Text(
                       bag["title"] ?? "Surprise Bag",
                       style: TextStyle(
@@ -691,9 +741,7 @@ class _NewHomePageState extends State<NewHomePage> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-
                     SizedBox(height: 8),
-
                     Text(
                       "Pick up today: ${bag["pickupStartTime"] ?? "10:30"} PM - ${bag["pickupEndTime"] ?? "11:00"} PM  9.9 km",
                       style: TextStyle(
@@ -703,9 +751,7 @@ class _NewHomePageState extends State<NewHomePage> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-
                     SizedBox(height: 8),
-
                     Row(
                       children: [
                         Text(
@@ -720,7 +766,7 @@ class _NewHomePageState extends State<NewHomePage> {
                         Text(
                           "\$${bag["discountedPrice"] ?? "4.65"}",
                           style: TextStyle(
-                            color: notifier.textColor,
+                            color: Colors.grey[800],
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -744,7 +790,7 @@ class _NewHomePageState extends State<NewHomePage> {
       orElse: () => {
         "title": "Unknown Restaurant",
         "image": "",
-        "address": "Address not available",
+        "fullAddress": "Address not available",
       },
     );
 
@@ -753,28 +799,33 @@ class _NewHomePageState extends State<NewHomePage> {
       child: InkWell(
         onTap: () {
           Get.to(() => SurpriseBagDetails(
-            bagData: bag,
-            restaurantName: restaurant["title"] ?? "Unknown Restaurant",
-            restaurantImage: restaurant["image"] ?? "",
-            restaurantAddress: restaurant["address"] ?? "Address not available",
-          ));
+                bagData: bag,
+                restaurantData: restaurant,
+              ));
         },
         onLongPress: () {
           Get.to(() => RestaurantReviewsPage(
-            restaurantId: restaurant["id"] ?? "",
-            restaurantName: restaurant["title"] ?? "Unknown Restaurant",
-          ));
+                restaurantId: restaurant["id"] ?? "",
+                restaurantName: restaurant["title"] ?? "Unknown Restaurant",
+              ));
         },
         borderRadius: BorderRadius.circular(12),
         child: Container(
           decoration: BoxDecoration(
-            color: notifier.containerColor,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 8,
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 12,
+                offset: Offset(0, 4),
+                spreadRadius: 0,
+              ),
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 6,
                 offset: Offset(0, 2),
+                spreadRadius: 0,
               ),
             ],
           ),
@@ -789,7 +840,11 @@ class _NewHomePageState extends State<NewHomePage> {
                       bottomLeft: Radius.circular(12),
                     ),
                     child: CachedNetworkImage(
-                      imageUrl: bag["img"] ?? "https://picsum.photos/120/120",
+                      imageUrl: bag["img"]?.toString().isNotEmpty == true
+                          ? bag["img"]
+                          : bag["image"]?.toString().isNotEmpty == true
+                              ? bag["image"]
+                              : "https://via.placeholder.com/120x120/f0f0f0/999999?text=No+Image",
                       width: 120,
                       height: 120,
                       fit: BoxFit.cover,
@@ -797,13 +852,15 @@ class _NewHomePageState extends State<NewHomePage> {
                         width: 120,
                         height: 120,
                         color: Colors.grey[300],
-                        child: Icon(Icons.restaurant, color: Colors.grey, size: 30),
+                        child: Icon(IconlyLight.category,
+                            color: Colors.grey, size: 30),
                       ),
                       errorWidget: (context, url, error) => Container(
                         width: 120,
                         height: 120,
                         color: Colors.grey[300],
-                        child: Icon(Icons.restaurant, color: Colors.grey, size: 30),
+                        child: Icon(IconlyLight.category,
+                            color: Colors.grey, size: 30),
                       ),
                     ),
                   ),
@@ -821,7 +878,7 @@ class _NewHomePageState extends State<NewHomePage> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.star, color: Colors.amber, size: 12),
+                          Icon(IconlyBold.star, color: Colors.amber, size: 12),
                           SizedBox(width: 2),
                           Text(
                             restaurant["rating"]?.toString() ?? "4.3",
@@ -841,7 +898,8 @@ class _NewHomePageState extends State<NewHomePage> {
                     bottom: 8,
                     right: 8,
                     child: Obx(() {
-                      final bagId = bag["id"] ?? DateTime.now().millisecondsSinceEpoch.toString();
+                      final bagId = bag["id"] ??
+                          DateTime.now().millisecondsSinceEpoch.toString();
                       final isFav = favouritesController.isFavourite(bagId);
 
                       return GestureDetector(
@@ -850,7 +908,7 @@ class _NewHomePageState extends State<NewHomePage> {
                             bag,
                             restaurant["title"] ?? "Unknown Restaurant",
                             restaurant["image"] ?? "",
-                            restaurant["address"] ?? "Address not available",
+                            restaurant["fullAddress"] ?? "Address not available",
                           );
                         },
                         child: Container(
@@ -867,7 +925,7 @@ class _NewHomePageState extends State<NewHomePage> {
                             ],
                           ),
                           child: Icon(
-                            isFav ? Icons.favorite : Icons.favorite_border,
+                            isFav ? IconlyBold.heart : IconlyLight.heart,
                             size: 16,
                             color: isFav ? Colors.red : Colors.grey[600],
                           ),
@@ -897,10 +955,23 @@ class _NewHomePageState extends State<NewHomePage> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(6),
                         child: CachedNetworkImage(
-                          imageUrl: restaurant["image"] ?? "https://picsum.photos/32/32",
+                          imageUrl: restaurant["image"]
+                                      ?.toString()
+                                      .isNotEmpty ==
+                                  true
+                              ? restaurant["image"]
+                              : restaurant["img"]?.toString().isNotEmpty == true
+                                  ? restaurant["img"]
+                                  : "https://via.placeholder.com/32x32/f0f0f0/999999?text=R",
                           fit: BoxFit.cover,
-                          placeholder: (context, url) => Icon(Icons.restaurant, color: Colors.grey, size: 16),
-                          errorWidget: (context, url, error) => Icon(Icons.restaurant, color: Colors.grey, size: 16),
+                          placeholder: (context, url) => Icon(
+                              IconlyLight.category,
+                              color: Colors.grey,
+                              size: 16),
+                          errorWidget: (context, url, error) => Icon(
+                              IconlyLight.category,
+                              color: Colors.grey,
+                              size: 16),
                         ),
                       ),
                     ),
@@ -918,16 +989,14 @@ class _NewHomePageState extends State<NewHomePage> {
                       Text(
                         restaurant["title"] ?? "Unknown Restaurant",
                         style: TextStyle(
-                          color: notifier.textColor,
+                          color: Colors.grey[800],
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-
                       SizedBox(height: 4),
-
                       Text(
                         bag["title"] ?? "Surprise Bag",
                         style: TextStyle(
@@ -937,9 +1006,7 @@ class _NewHomePageState extends State<NewHomePage> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-
                       SizedBox(height: 8),
-
                       Text(
                         "Pick up today: ${bag["pickupStartTime"] ?? "03:00"} PM - ${bag["pickupEndTime"] ?? "03:15"} PM  2.3 km",
                         style: TextStyle(
@@ -949,9 +1016,7 @@ class _NewHomePageState extends State<NewHomePage> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-
                       SizedBox(height: 8),
-
                       Row(
                         children: [
                           Text(
@@ -966,7 +1031,7 @@ class _NewHomePageState extends State<NewHomePage> {
                           Text(
                             "\$${bag["discountedPrice"] ?? "4.65"}",
                             style: TextStyle(
-                              color: notifier.textColor,
+                              color: Colors.grey[800],
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),

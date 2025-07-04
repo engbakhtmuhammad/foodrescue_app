@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'Utils/language_translate.dart';
 import 'api/Data_save.dart';
 import 'config/app_config.dart';
@@ -66,7 +67,40 @@ void main() async {
           highlightColor: Colors.transparent,
           hoverColor: Colors.transparent,
           dividerColor: Colors.transparent,
-          useMaterial3: false,
+          useMaterial3: true,
+          textTheme: GoogleFonts.nunitoTextTheme(),
+          fontFamily: GoogleFonts.nunito().fontFamily,
+          filledButtonTheme: FilledButtonThemeData(
+            style: FilledButton.styleFrom(
+              textStyle: GoogleFonts.nunito(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+          ),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              textStyle: GoogleFonts.nunito(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+          ),
+          appBarTheme: AppBarTheme(
+            titleTextStyle: GoogleFonts.nunito(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: Colors.black,
+            ),
+          ),
         ),
         debugShowCheckedModeBanner: false,
         home: const onbording(),

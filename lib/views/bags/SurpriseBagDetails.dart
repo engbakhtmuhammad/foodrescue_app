@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:iconly/iconly.dart';
 import 'package:foodrescue_app/Utils/Colors.dart';
 import 'package:foodrescue_app/controllers/home_controller.dart';
 import 'package:foodrescue_app/controllers/reservation_controller.dart';
@@ -8,19 +9,16 @@ import 'package:foodrescue_app/Utils/dark_light_mode.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'PaymentSelectionDialog.dart';
+import '../restaurant/RestaurantDetailsPage.dart';
 
 class SurpriseBagDetails extends StatefulWidget {
   final Map<String, dynamic> bagData;
-  final String restaurantName;
-  final String restaurantImage;
-  final String restaurantAddress;
+  final Map<String, dynamic> restaurantData;
 
   const SurpriseBagDetails({
     Key? key,
     required this.bagData,
-    required this.restaurantName,
-    required this.restaurantImage,
-    required this.restaurantAddress,
+    required this.restaurantData,
   }) : super(key: key);
 
   @override
@@ -33,8 +31,6 @@ class _SurpriseBagDetailsState extends State<SurpriseBagDetails> {
   final FavouritesController favouritesController = Get.put(FavouritesController());
   bool isReserving = false;
 
-
-
   @override
   Widget build(BuildContext context) {
     ColorNotifier notifier = Provider.of<ColorNotifier>(context, listen: true);
@@ -43,19 +39,19 @@ class _SurpriseBagDetailsState extends State<SurpriseBagDetails> {
       backgroundColor: notifier.background,
       body: CustomScrollView(
         slivers: [
-          // App Bar with Image
+          // TGTG-style App Bar with Large Image
           SliverAppBar(
-            expandedHeight: 300,
+            expandedHeight: 250,
             pinned: true,
             backgroundColor: notifier.background,
             leading: IconButton(
               icon: Container(
                 padding: EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(20),
+                  color: Colors.black.withOpacity(0.4),
+                  borderRadius: BorderRadius.circular(25),
                 ),
-                child: Icon(Icons.arrow_back, color: Colors.white),
+                child: Icon(IconlyLight.arrow_left, color: Colors.white, size: 20),
               ),
               onPressed: () => Get.back(),
             ),
@@ -68,44 +64,47 @@ class _SurpriseBagDetailsState extends State<SurpriseBagDetails> {
                   icon: Container(
                     padding: EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(20),
+                      color: Colors.black.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(25),
                     ),
-                    child: Center(
-                      child: Icon(
-                        isFav ? Icons.favorite : Icons.favorite_border,
-                        color: isFav ? Colors.red : Colors.white,
-                      ),
+                    child: Icon(
+                      isFav ? IconlyBold.heart : IconlyLight.heart,
+                      color: isFav ? Colors.red : Colors.white,
+                      size: 20,
                     ),
                   ),
                   onPressed: () {
                     favouritesController.toggleFavourite(
                       widget.bagData,
-                      widget.restaurantName,
-                      widget.restaurantImage,
-                      widget.restaurantAddress,
+                      widget.restaurantData["title"] ?? "Unknown Restaurant",
+                      widget.restaurantData["img"] ?? "",
+                      widget.restaurantData["fullAddress"] ?? "Address not available",
                     );
                   },
                 );
               }),
+              SizedBox(width: 8),
             ],
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
                 fit: StackFit.expand,
                 children: [
+                  // Main image
                   CachedNetworkImage(
-                    imageUrl: widget.bagData["img"] ?? widget.restaurantImage,
+                    imageUrl: widget.bagData["img"] ?? widget.restaurantData["image"] ?? "https://picsum.photos/400/200",
                     fit: BoxFit.cover,
                     placeholder: (context, url) => Container(
                       color: Colors.grey[300],
-                      child: Center(child: CircularProgressIndicator()),
+                      child: Center(
+                        child: CircularProgressIndicator(color: orangeColor),
+                      ),
                     ),
                     errorWidget: (context, url, error) => Container(
                       color: Colors.grey[300],
-                      child: Icon(Icons.restaurant, size: 50, color: Colors.grey),
+                      child: Icon(IconlyLight.bag, size: 80, color: Colors.grey),
                     ),
                   ),
-                  // Gradient overlay
+                  // Subtle gradient overlay at bottom
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -113,496 +112,745 @@ class _SurpriseBagDetailsState extends State<SurpriseBagDetails> {
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          Colors.black.withOpacity(0.7),
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.3),
                         ],
+                        stops: [0.0, 0.7, 1.0],
                       ),
                     ),
                   ),
-                  // Availability badge
+                  // Restaurant info overlay at bottom - TGTG style
                   Positioned(
-                    top: 60,
+                    bottom: 16,
+                    left: 16,
                     right: 16,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: _getAvailabilityColor(),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
-                            blurRadius: 4,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _getAvailabilityIcon(),
+                    child: Column(
+                      children: [
+                        Row(
+                      children: [
+                        // Popular badge
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
                             color: Colors.white,
-                            size: 14,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 8,
+                                offset: Offset(0, 3),
+                              ),
+                            ],
                           ),
-                          SizedBox(width: 4),
-                          Text(
-                            _getAvailabilityText(),
+                          child: Text(
+                            "Popular",
                             style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                              fontWeight: FontWeight.w600,
                               fontSize: 12,
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                        SizedBox(width: 8),
+                        // Quantity left badge
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 8,
+                                offset: Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            "${widget.bagData["itemsLeft"] ?? "2"} left",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16),
+                        Row(
+                          children: [
+                            // Restaurant logo
+                            Container(
+                              width: 50,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.white, width: 2),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: CachedNetworkImage(
+                                  imageUrl: widget.restaurantData["img"] ?? widget.restaurantData["image"],
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => Container(
+                                    color: Colors.grey[300],
+                                    child: Icon(IconlyLight.home, color: Colors.grey),
+                                  ),
+                                  errorWidget: (context, url, error) => Container(
+                                    color: Colors.grey[300],
+                                    child: Icon(IconlyLight.home, color: Colors.grey),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            // Restaurant name and address
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    widget.restaurantData["title"] ?? "Unknown Restaurant",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      shadows: [
+                                        Shadow(
+                                          color: Colors.black.withOpacity(0.5),
+                                          blurRadius: 5,
+                                          offset: Offset(0, 1),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  SizedBox(height: 2),
+                                  Text(
+                                    widget.restaurantData["fullAddress"]!=null? widget.restaurantData["fullAddress"]: widget.restaurantData["address"]?? "Address not available",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      shadows: [
+                                        Shadow(
+                                          color: Colors.black.withOpacity(0.5),
+                                          blurRadius: 5,
+                                          offset: Offset(0, 1),
+                                        ),
+                                      ],
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
+              
                 ],
               ),
             ),
           ),
           
-          // Content
+          // TGTG-style Content
           SliverToBoxAdapter(
             child: Container(
               decoration: BoxDecoration(
                 color: notifier.background,
                 borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
                 ),
               ),
-              child: Padding(
-                padding: EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Restaurant Info
-                    _buildRestaurantInfo(notifier),
-                    SizedBox(height: 24),
-                    
-                    // Bag Details
-                    _buildBagDetails(notifier),
-                    SizedBox(height: 24),
-                    
-                    // Pickup Info
-                    _buildPickupInfo(notifier),
-                    SizedBox(height: 24),
-                    
-                    // Description
-                    _buildDescription(notifier),
-                    SizedBox(height: 24),
-                    
-                    // What you might get
-                    _buildWhatYouMightGet(notifier),
-                    SizedBox(height: 100), // Space for bottom button
-                  ],
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Main bag info card - TGTG style
+                  _buildMainInfoCard(notifier),
+                  
+                  SizedBox(height: 20),
+                  
+                  // Restaurant info - TGTG style
+                  _buildRestaurantCard(notifier),
+                  
+                  SizedBox(height: 20),
+                  
+                  // Pickup details - TGTG style
+                  _buildPickupCard(notifier),
+                  
+                  SizedBox(height: 20),
+                  
+                  // What you might get - TGTG style
+                  _buildWhatYouMightGetCard(notifier),
+                  
+                  SizedBox(height: 120), // Space for bottom button
+                ],
               ),
             ),
           ),
         ],
       ),
-      bottomNavigationBar: _buildBottomReserveButton(notifier),
+      bottomNavigationBar: _buildTGTGBottomButton(notifier),
     );
   }
 
-  Widget _buildRestaurantInfo(ColorNotifier notifier) {
-    return Row(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: CachedNetworkImage(
-            imageUrl: widget.restaurantImage,
-            width: 60,
-            height: 60,
-            fit: BoxFit.cover,
-            placeholder: (context, url) => Container(
-              width: 60,
-              height: 60,
-              color: Colors.grey[300],
-              child: Icon(Icons.restaurant),
-            ),
-            errorWidget: (context, url, error) => Container(
-              width: 60,
-              height: 60,
-              color: Colors.grey[300],
-              child: Icon(Icons.restaurant),
-            ),
+  // TGTG-style Main Info Card
+  Widget _buildMainInfoCard(ColorNotifier notifier) {
+    final originalPrice = double.tryParse(widget.bagData["originalPrice"]?.toString() ?? "0") ?? 0.0;
+    final currentPrice = double.tryParse(widget.bagData["discountedPrice"]?.toString() ?? "0") ?? 0.0;
+    
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: notifier.containerColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: Offset(0, 4),
           ),
-        ),
-        SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Title and bag icon
+          Row(
             children: [
-              Text(
-                widget.restaurantName,
-                style: TextStyle(
-                  color: notifier.textColor,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+              Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: orangeColor,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  IconlyLight.bag,
+                  color: Colors.white,
+                  size: 20,
                 ),
               ),
-              SizedBox(height: 4),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  widget.bagData["title"] ?? "${widget.restaurantData["title"] ?? "Unknown Restaurant"} Surprise Bag",
+                  style: TextStyle(
+                    color: notifier.textColor,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+          
+          // Rating and price row
+          Row(
+            children: [
+              // Star rating
               Row(
                 children: [
-                  Icon(Icons.location_on, size: 16, color: Colors.grey),
+                  Icon(Icons.star, color: Colors.green, size: 18),
                   SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      widget.restaurantAddress,
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 14,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                  Text(
+                    "${widget.bagData["rating"] ?? "4.9"}",
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: notifier.textColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(width: 4),
+                  Text(
+                    "(${widget.bagData["totalReviews"] ?? "1,219"})",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
                     ),
                   ),
                 ],
               ),
-              SizedBox(height: 4),
-              Row(
+              Spacer(),
+              // Prices
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Icon(Icons.star, size: 16, color: Colors.amber),
-                  SizedBox(width: 4),
+                  if (originalPrice > currentPrice)
+                    Text(
+                      "\$${originalPrice.toStringAsFixed(2)}",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey,
+                        decoration: TextDecoration.lineThrough,
+                      ),
+                    ),
                   Text(
-                    "4.5 (120 reviews)",
+                    "\$${currentPrice.toStringAsFixed(2)}",
                     style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 14,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: notifier.textColor,
                     ),
                   ),
                 ],
               ),
             ],
           ),
-        ),
-      ],
+          SizedBox(height: 16),
+          
+          // Pickup time with today badge
+          Row(
+            children: [
+              Icon(IconlyLight.time_circle, color: Colors.grey[600], size: 18),
+              SizedBox(width: 8),
+              Text(
+                "Pick up: ${widget.bagData["todayPickupStart"] ?? "10:30"} - ${widget.bagData["todayPickupEnd"] ?? "11:00"}",
+                style: TextStyle(
+                  fontSize: 14,
+                  color: notifier.textColor,
+                ),
+              ),
+              SizedBox(width: 12),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: orangeColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  widget.bagData["pickupType"] ?? "Today",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildBagDetails(ColorNotifier notifier) {
+  // TGTG-style Restaurant Card
+  Widget _buildRestaurantCard(ColorNotifier notifier) {
     return Container(
+      margin: EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: [
+          // Location section
+          GestureDetector(
+            onTap: () {
+              // Navigate to restaurant details page
+              Get.to(() => RestaurantDetailsPage(restaurantData: widget.restaurantData));
+            },
+            child: Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: notifier.containerColor,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Icon(IconlyLight.location, color: orangeColor, size: 22),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.restaurantData["fullAddress"]!=null?widget.restaurantData["fullAddress"].split(',').first:widget.restaurantData["address"].split(',').first ?? "Address not available",
+                          style: TextStyle(
+                            color: notifier.textColor,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          "More information about the store",
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(IconlyLight.arrow_right_2, color: Colors.grey[400]),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: 16),
+          
+          // Popular section
+          Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 5,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.trending_up,
+                    color: orangeColor,
+                    size: 24,
+                  ),
+                ),
+                SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "This item is popular",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        "This Surprise Bag is a crowd favorite, with top ratings and plenty of saves.",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[700],
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // TGTG-style Pickup Card
+  Widget _buildPickupCard(ColorNotifier notifier) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 16),
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: notifier.containerColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              Icon(IconlyLight.time_circle, color: orangeColor, size: 24),
+              SizedBox(width: 12),
               Text(
-                widget.bagData["title"] ?? "Surprise Bag",
+                "Pickup Details",
                 style: TextStyle(
                   color: notifier.textColor,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: orangeColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  "${widget.bagData["itemsLeft"] ?? 1} left",
-                  style: TextStyle(
-                    color: orangeColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
             ],
           ),
-          SizedBox(height: 12),
-          Row(
-            children: [
-              Text(
-                "\$${widget.bagData["discountedPrice"] ?? "9.99"}",
-                style: TextStyle(
-                  color: orangeColor,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(width: 8),
-              Text(
-                "\$${widget.bagData["originalPrice"] ?? "29.99"}",
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 16,
-                  decoration: TextDecoration.lineThrough,
-                ),
-              ),
-              Spacer(),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                 "${widget.bagData["discountPercentage"] ?? "67"}% OFF",
-                  style: TextStyle(
-                    color: Colors.green,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
+          SizedBox(height: 16),
+          
+          // Pickup time
+          _buildPickupInfoRow(
+            icon: IconlyLight.calendar,
+            title: "Pickup Time",
+            subtitle: widget.bagData["pickupType"] ?? "Today",
+            time: "${widget.bagData["todayPickupStart"] ?? "18:00"} - ${widget.bagData["todayPickupEnd"] ?? "20:00"}",
+            notifier: notifier,
           ),
+          
+          SizedBox(height: 16),
+          
+          // Location
+          _buildPickupInfoRow(
+            icon: IconlyLight.location,
+            title: "Pickup Location",
+            subtitle: widget.restaurantData["fullAddress"]!=null?widget.restaurantData["fullAddress"].split(',').first:widget.restaurantData["address"].split(',').first ?? "Address not available",
+            time: null,
+            notifier: notifier,
+          ),
+          
+          SizedBox(height: 16),
+          
+          // Instructions
+          if (widget.bagData["pickupInstructions"] != null && widget.bagData["pickupInstructions"].toString().isNotEmpty)
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blue.withOpacity(0.2)),
+              ),
+              child: Row(
+                children: [
+                  Icon(IconlyLight.info_circle, color: Colors.blue, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      widget.bagData["pickupInstructions"] ?? "Please bring your confirmation and a reusable bag",
+                      style: TextStyle(
+                        color: Colors.blue[700],
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildPickupInfo(ColorNotifier notifier) {
+  // TGTG-style What You Might Get Card
+  Widget _buildWhatYouMightGetCard(ColorNotifier notifier) {
     return Container(
-      padding: EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: notifier.containerColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
-      ),
+      margin: EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Pickup Information",
-            style: TextStyle(
-              color: notifier.textColor,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+          // What you could get section
+          Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: notifier.containerColor,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "What you could get",
+                  style: TextStyle(
+                    color: notifier.textColor,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 12),
+                Text(
+                  widget.bagData["description"] ?? 
+                  "Our surprise bags contain a melt-in-your-mouth selection of 6 Krispy Kreme doughnuts. You'll receive a surprise box of 6 delicious doughnuts chosen directly from the cabinet at the time of your collection.",
+                  style: TextStyle(
+                    color: Colors.grey[700],
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
+                ),
+              ],
             ),
           ),
           SizedBox(height: 16),
-          _buildPickupInfoRow(
-            Icons.access_time,
-            "Pickup Time",
-            "${widget.bagData["pickupStartTime"] ?? "18:00"} - ${widget.bagData["pickupEndTime"] ?? "20:00"}",
-            notifier,
-          ),
-          SizedBox(height: 12),
-          _buildPickupInfoRow(
-            Icons.calendar_today,
-            "Available",
-            "Today",
-            notifier,
-          ),
-          SizedBox(height: 12),
-          _buildPickupInfoRow(
-            Icons.location_on,
-            "Pickup Location",
-            widget.restaurantAddress,
-            notifier,
+          
+          // Category tag
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              widget.bagData["category"] ?? "Bread & pastries",
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[700],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPickupInfoRow(IconData icon, String title, String value, ColorNotifier notifier) {
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: orangeColor),
-        SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 12,
-              ),
-            ),
-            Text(
-              value,
-              style: TextStyle(
-                color: notifier.textColor,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDescription(ColorNotifier notifier) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "About this bag",
-          style: TextStyle(
-            color: notifier.textColor,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        SizedBox(height: 12),
-        Text(
-          widget.bagData["description"] ?? 
-          "A delicious surprise bag filled with fresh items that would otherwise go to waste. Perfect for discovering new flavors while helping reduce food waste!",
-          style: TextStyle(
-            color: notifier.textColor,
-            fontSize: 14,
-            height: 1.5,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildWhatYouMightGet(ColorNotifier notifier) {
-    List<String> items = [
-      "Fresh pastries and bread",
-      "Seasonal vegetables",
-      "Prepared meals",
-      "Desserts and sweets",
-      "Beverages",
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "What you might get",
-          style: TextStyle(
-            color: notifier.textColor,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        SizedBox(height: 12),
-        ...items.map((item) => Padding(
-          padding: EdgeInsets.only(bottom: 8),
-          child: Row(
-            children: [
-              Icon(Icons.check_circle, size: 16, color: Colors.green),
-              SizedBox(width: 8),
-              Text(
-                item,
-                style: TextStyle(
-                  color: notifier.textColor,
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
-        )).toList(),
-      ],
-    );
-  }
-
-  Widget _buildBottomReserveButton(ColorNotifier notifier) {
+  // TGTG-style Bottom Button
+  Widget _buildTGTGBottomButton(ColorNotifier notifier) {
     return Container(
-      padding: EdgeInsets.all(20),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: notifier.containerColor,
+        color: notifier.background,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
             blurRadius: 10,
-            offset: Offset(0, -5),
+            offset: Offset(0, -2),
           ),
         ],
       ),
       child: SafeArea(
-        child: ElevatedButton(
-          onPressed: isReserving ? null : _reserveBag,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: orangeColor,
-            padding: EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: ElevatedButton(
+            onPressed: isReserving ? null : _handleReservation,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.teal,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25),
+              ),
+              elevation: 0,
             ),
-            elevation: 0,
+            child: isReserving
+                ? Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Text(
+                        "Reserving...",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  )
+                : Text(
+                    "Reserve",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
           ),
-          child: isReserving
-              ? SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2,
-                  ),
-                )
-              : Text(
-                  "Reserve for \$${widget.bagData["discountedPrice"] ?? "9.99"}",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
         ),
       ),
     );
   }
 
-  Color _getAvailabilityColor() {
-    int quantity = int.tryParse(widget.bagData["itemsLeft"]?.toString() ?? "0") ?? 0;
-    if (quantity > 5) return Colors.green;
-    if (quantity > 0) return Colors.orange;
-    return Colors.red;
+  Widget _buildPickupInfoRow({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    String? time,
+    required ColorNotifier notifier,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 20, color: Colors.grey[600]),
+        SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  color: notifier.textColor,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 13,
+                ),
+              ),
+              if (time != null) ...[
+                SizedBox(height: 2),
+                Text(
+                  time,
+                  style: TextStyle(
+                    color: orangeColor,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
-  String _getAvailabilityText() {
-    int quantity = int.tryParse(widget.bagData["itemsLeft"]?.toString() ?? "0") ?? 0;
-    if (quantity > 5) return "Available";
-    if (quantity > 0) return "Few left";
-    return "Sold out";
-  }
-
-  IconData _getAvailabilityIcon() {
-    int quantity = int.tryParse(widget.bagData["itemsLeft"]?.toString() ?? "0") ?? 0;
-    if (quantity > 5) return Icons.check_circle;
-    if (quantity > 0) return Icons.access_time;
-    return Icons.cancel;
-  }
-
-  void _reserveBag() async {
+  // Add the missing _handleReservation method
+  void _handleReservation() async {
     setState(() {
       isReserving = true;
     });
 
     try {
-      // Check if user has already reserved this bag
-      if (reservationController.hasReservedBag(widget.bagData["id"] ?? "")) {
-        Get.snackbar("Info", "You have already reserved this surprise bag");
-        return;
-      }
-
-      // Find restaurant data
-      Map<String, dynamic> restaurantData = {
-        "id": widget.bagData["restaurantId"] ?? "",
-        "title": widget.restaurantName,
-        "image": widget.restaurantImage,
-        "address": widget.restaurantAddress,
-      };
-
-      // Try to find more complete restaurant data
+      // Get restaurant data
       final restaurant = homeController.allrest.firstWhere(
         (r) => r["id"] == widget.bagData["restaurantId"],
-        orElse: () => restaurantData,
+        orElse: () => {
+          "title": widget.restaurantData["title"] ?? "Unknown Restaurant",
+          "image": widget.restaurantData["img"] ?? "",
+          "fullAddress": widget.restaurantData["fullAddress"] ?? "Address not available",
+        },
       );
 
-      // Get the price for payment
-      double price = double.tryParse(widget.bagData["discountedPrice"]?.toString() ?? "0") ?? 0.0;
+      final price = double.tryParse(widget.bagData["discountedPrice"]?.toString() ?? "0") ?? 0.0;
 
-      // Show payment selection dialog
-      await showDialog(
+      // Show payment dialog
+      showDialog(
         context: context,
         barrierDismissible: false,
         builder: (context) => PaymentSelectionDialog(
@@ -639,4 +887,7 @@ class _SurpriseBagDetailsState extends State<SurpriseBagDetails> {
       });
     }
   }
+
+
+
 }

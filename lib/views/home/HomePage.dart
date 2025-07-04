@@ -1048,9 +1048,7 @@ class _HomePageState extends State<HomePage> {
                                                       onTap: () {
                                                         Get.to(() => SurpriseBagDetails(
                                                           bagData: bag,
-                                                          restaurantName: restaurant["title"] ?? "Unknown Restaurant",
-                                                          restaurantImage: restaurant["image"] ?? "",
-                                                          restaurantAddress: restaurant["address"] ?? "Address not available",
+                                                          restaurantData: restaurant,
                                                         ));
                                                       },
                                                       child: Container(

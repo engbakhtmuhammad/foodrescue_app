@@ -940,4 +940,25 @@ class HomeController extends GetxController {
     );
   }
 
+  // Update bag quantity after reservation
+  void updateBagQuantity(String bagId, int newQuantity) {
+    try {
+      // Find and update the bag in the list
+      for (var bag in _surpriseBags) {
+        if (bag["id"] == bagId) {
+          bag["itemsLeft"] = newQuantity.toString();
+          bag["quantity"] = newQuantity.toString();
+          if (newQuantity <= 0) {
+            bag["isAvailable"] = false;
+          }
+          break;
+        }
+      }
+      update(); // Notify UI to refresh
+      print("Updated bag $bagId quantity to $newQuantity");
+    } catch (e) {
+      print("Error updating bag quantity: $e");
+    }
+  }
+
 }

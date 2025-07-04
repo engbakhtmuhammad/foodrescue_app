@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../Utils/Colors.dart';
 import '../../Utils/dark_light_mode.dart';
 import '../../controllers/favourites_controller.dart';
+import '../../controllers/home_controller.dart';
 import '../bags/SurpriseBagDetails.dart';
 
 class FavouritesPage extends StatefulWidget {
@@ -14,6 +15,7 @@ class FavouritesPage extends StatefulWidget {
 
 class _FavouritesPageState extends State<FavouritesPage> {
   final FavouritesController favouritesController = Get.put(FavouritesController());
+  final HomeController homeController = Get.find<HomeController>();
 
   @override
   void initState() {
@@ -143,11 +145,17 @@ class _FavouritesPageState extends State<FavouritesPage> {
       ),
       child: InkWell(
         onTap: () {
+          final restaurant = homeController.allrest.firstWhere(
+            (r) => r["id"] == favourite["restaurantId"],
+            orElse: () => {
+              "title": "Unknown Restaurant",
+              "image": "",
+              "address": "Address not available",
+            },
+          );
           Get.to(() => SurpriseBagDetails(
             bagData: favourite,
-            restaurantName: favourite["restaurantName"] ?? "Unknown Restaurant",
-            restaurantImage: favourite["restaurantImage"] ?? "",
-            restaurantAddress: favourite["restaurantAddress"] ?? "Address not available",
+            restaurantData: restaurant,
           ));
         },
         borderRadius: BorderRadius.circular(12),
